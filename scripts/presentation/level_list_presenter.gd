@@ -12,12 +12,21 @@ var _container: VBoxContainer
 
 func _ready() -> void:
 	set_anchors_preset(PRESET_FULL_RECT)
+	size = get_viewport_rect().size  # CanvasLayer 父级不提供 Control 尺寸，显式取视口
+	get_viewport().size_changed.connect(func() -> void: size = get_viewport_rect().size)
 	var bg := ColorRect.new()
 	bg.color = Color(0.1, 0.1, 0.13)
 	bg.set_anchors_preset(PRESET_FULL_RECT)
+	bg.size = size
 	add_child(bg)
 	_container = VBoxContainer.new()
-	_container.set_anchors_preset(PRESET_CENTER)
+	_container.anchor_left = 0.5
+	_container.anchor_right = 0.5
+	_container.anchor_top = 0.5
+	_container.anchor_bottom = 0.5
+	_container.offset_left = -260
+	_container.offset_right = 260
+	_container.offset_top = -300
 	_container.add_theme_constant_override("separation", 20)
 	add_child(_container)
 	refresh()

@@ -129,3 +129,22 @@
 - 清理：删除 7 个已被正式实现取代的占位脚本（scripts/effects、turret、ui 目录）。
 - 自测：tests/unit/test_presentation.gd 22/22 PASS（HUD 同步/隐藏/高亮、音效计数与去重、粒子上限 4 放行 1 丢弃、关卡列表回调）；WAV 经 --import 后 ResourceLoader 可加载；主场景 headless 冒烟无脚本错误。
 - 遗留：音效"可听到"与 UI 视觉验证属桌面/模拟器轮（T24），headless 无法覆盖，已记录。
+
+## 阶段6 安卓打包（CLAUDE-ALL 自主执行，2026-10-26，完成）
+- P6-01：export_presets.cfg（包名 com.learning.godotvoxelblocksmash，arm64-v8a+x86_64，沉浸式竖屏，全部权限关闭，无密钥入仓库，调试签名用编辑器已配置 keystore）。
+- 环境：Godot 4.7.2.stable / export templates 4.7.2.stable（本机原缺 Android 模板，已从官方 release 提取 android_debug/release.apk 安装）/ Java 21 (ms-21.0.10) / SDK ~/Library/Android/sdk。
+- 修复：导出要求 ETC2/ASTC 纹理压缩 → project.godot 开启 textures/vram_compression/import_etc2_astc。
+- P6-02 触屏适配修复（设备实测驱动）：竖屏方向字符串被忽略改整数枚举 orientation=1（aapt2 验证 AndroidManifest screenOrientation=1）；模型 attach 重复中心偏移导致不可见→移除二次偏移；tscn Transform3D 字面量行主序误写列主序致相机俯角反向→转置修正；CanvasLayer 下 Control 尺寸0+keep_offsets 致底部 UI 出屏→显式锚点+size=get_viewport_rect().size。
+- 最终产物：builds/android/godot-voxel-block-smash-debug.apk（调试签名，apksigner 校验通过），最终 SHA256=75f6fd2cde4b15d8c229b31c652925fcfa6f7b6b903a22477f20bcb4aad9cdad（阶段7 修复 event_recorder flush 后重建；中间版本哈希 2531939c…/4b01fa57… 已被取代）。
+- 为阶段7取证新增：diagnostics/perf_monitor.gd（FPS/avg/p95/内存周期写 user://perf_log.jsonl）、main.gd 进关时 recorder.open()；桌面诊断探针 tools/render_probe.gd、tools/scene_probe.gd（可视化调试，加速设备问题定位）。
+
+## 阶段7 模拟器验证（CLAUDE-ALL 自主执行，2026-10-26，完成）
+- 环境核对：AVD voxel_test_api33 = API 33 / x86_64 / 1080x2400，与 D07 目标逐项一致（getprop/wm size 实测）；渲染后端 SwiftShader 软渲染。
+- 安装启动：adb install 成功、竖屏启动、首次系统沉浸式提示框（"Viewing full screen"）已识别并点击消除，不属应用缺陷。
+- 设备玩法证据链（event_log_device.jsonl 全量记录）：进关 level_loaded → 安放绿卡 → 发射 turret_fire（ammo 3→2→1→0 归零移除）→ ball_hit_voxel/voxel_destroyed×7 → 剩余367→360；四道具实测：加槽解锁第4槽（用尽按钮隐藏）、任意指紫球 any_color:true 删除绿块、速度×2 实测模长24.0下一发恢复12.0、随机排九格全刷槽位不变；combo_update×11 出界归零；单指滑动模型绕中心旋转（截图 device_rotated_shuffled.png）。
+- 跨进程持久化（G15/D09）：KEYCODE_HOME 触发 APPLICATION_PAUSED 落盘 → force-stop → 重启进关：剩余359、4槽、道具计数、九格池卡与离开前完全一致（截图 device_session_restored.png）。
+- 修复记录：event_recorder._write 未 flush 导致 Android 上 event_log.jsonl 0 字节（perf_monitor 有 flush 故正常）→ 每行 flush + 暂停/退出 recorder.close() → 重建重装后日志完整。
+- 性能（如实记录，不推定通过）：perf_log_device.jsonl — FPS 平均10.0/峰值12.2（D07≥30 FAIL）、p95 峰值143.1ms（≤50 FAIL）、内存峰值57.1MB（≤512MB PASS）、35s 窗口增长10.4%（窗口不足60s，样本不足）。SwiftShader 无 GPU 加速为主要归因，需真机复测。T23 的30轮/120s 未完整执行，标记部分执行。
+- headless 最终回归：9 套（event_bus/input/voxel/gameplay/presentation/persistence/import/ball/play）全部 exit=0，合计 145 行 PASS。
+- 测试报告：docs/test-report.md 终轮填写完成 — T01~T12/T14~T22/T24 PASS，T13 FAIL（性能环境受限），T23 部分执行。
+- 遗留：GitHub 推送阻塞于用户交互登录（gh auth login 需用户本人执行）；真机性能复测；T23 完整30轮。

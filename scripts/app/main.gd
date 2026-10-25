@@ -34,11 +34,18 @@ func _ready() -> void:
 	level_list = preload("res://scripts/presentation/level_list_presenter.gd").new()
 	level_list.on_level_chosen = _on_level_chosen
 	ui.add_child(level_list)
+	add_child(preload("res://scripts/diagnostics/perf_monitor.gd").new())
 
 
 func _on_level_chosen(level_id: String) -> void:
 	_current_level_path = "res://assets/levels/%s.json" % level_id
-	var res: Dictionary = controller.start_level(_current_level_path)
+	controller.recorder.open()
+	var snap: Dictionary = LevelRepository.load_snapshot(level_id)
+	var restore: Dictionary = {}
+	if snap.get("ok", false) and snap.get("exists", false) \
+			and snap.snapshot.get("outcome", "") == "RUNNING":
+		restore = snap.snapshot  # 跨进程恢复进行中的本局（G15/D09）；已终局则重开
+	var res: Dictionary = controller.start_level(_current_level_path, restore)
 	if not res.ok:
 		push_error("关卡启动失败: " + str(res.get("error", "")))
 		return
@@ -83,3 +90,7 @@ func _apply_rotation(rot: Vector2) -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST and controller.session != null:
 		controller.save_session()
+		controller.recorder.close()
+	elif what == NOTIFICATION_APPLICATION_PAUSED and controller.session != null:
+		controller.save_session()  # Android 退后台即落盘（G15）
+		controller.recorder.close()

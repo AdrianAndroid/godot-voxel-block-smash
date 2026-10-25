@@ -1,0 +1,11 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+  PASS: 反射 v-2(v·n)n
+  PASS: 斜入射反射
+  PASS: 墙面命中点/法线
+  PASS: 大步长不穿透(命中1次)
+  PASS: 反弹后速度反向
+  PASS: 出界只提交一次
+  PASS: 旋转模型下命中
+  PASS: 旋转后世界法线正确
+TEST_PASS test_ball

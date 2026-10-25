@@ -12,9 +12,9 @@ func attach(p_manager: RefCounted, p_data: RefCounted) -> void:
 	manager = p_manager
 	voxel_data = p_data
 	var render_node: Node3D = manager.build(p_data)
+	# 实例变换已含 -center_offset（grid_to_local），渲染子节点不再二次偏移，
+	# 枢轴即本节点原点（= 模型包围盒中心），旋转绕中心（G01）
 	add_child(render_node)
-	# 以包围盒中心为枢轴，便于绕中心旋转
-	render_node.position = -p_data.center_offset()
 
 
 func grid_to_world(grid_pos: Vector3) -> Vector3:

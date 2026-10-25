@@ -51,6 +51,7 @@ func close() -> Dictionary:
 func _write(row: Dictionary) -> void:
 	if _file != null:
 		_file.store_line(JSON.stringify(row))
+		_file.flush()  # Android 上 close() 前缓冲不落盘，每行强制 flush（诊断日志，量小）
 
 
 static func _to_jsonable(v: Variant) -> Variant:

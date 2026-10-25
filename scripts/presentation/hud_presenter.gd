@@ -24,6 +24,8 @@ var _prop_buttons: Dictionary = {}
 
 func _ready() -> void:
 	set_anchors_preset(PRESET_FULL_RECT)
+	size = get_viewport_rect().size  # CanvasLayer 父级不提供 Control 尺寸，显式取视口
+	get_viewport().size_changed.connect(func() -> void: size = get_viewport_rect().size)
 	mouse_filter = MOUSE_FILTER_IGNORE
 	_build_ui()
 
@@ -41,7 +43,7 @@ func bind(p_controller: Node) -> void:
 
 func _build_ui() -> void:
 	var top := HBoxContainer.new()
-	top.set_anchors_preset(PRESET_TOP_WIDE)
+	top.set_anchors_preset(PRESET_TOP_WIDE, false)
 	top.offset_top = 12
 	top.offset_left = 16
 	top.offset_right = -16
@@ -60,13 +62,18 @@ func _build_ui() -> void:
 	top.add_child(_remain_label)
 
 	_result_label = Label.new()
-	_result_label.set_anchors_preset(PRESET_CENTER)
+	_result_label.set_anchors_preset(PRESET_CENTER, false)
+	_result_label.offset_left = -300
+	_result_label.offset_right = 300
 	_result_label.add_theme_font_size_override("font_size", 96)
 	_result_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(_result_label)
 
 	var bottom := VBoxContainer.new()
-	bottom.set_anchors_preset(PRESET_BOTTOM_WIDE)
+	bottom.anchor_left = 0.0
+	bottom.anchor_right = 1.0
+	bottom.anchor_top = 1.0
+	bottom.anchor_bottom = 1.0
 	bottom.offset_left = 16
 	bottom.offset_right = -16
 	bottom.offset_bottom = -16
