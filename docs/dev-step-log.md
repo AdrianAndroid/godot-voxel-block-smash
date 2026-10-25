@@ -113,3 +113,13 @@
   - tests/persistence/test_persistence.gd 12/12 PASS（配置契约/路径穿越拒绝/会话独立/存档往返/版本拒绝/损坏拒绝）
 - 修复记录：墙面命中期望修正（命中近侧膨胀面 x=1.35 而非远侧 -0.35）；两处 GDScript 类型推断报错改显式标注；game_controller 对齐实际 API（ball_physics.setup/set_level、session_generation、边界按 bbox 半径+8）。
 - 遗留：headless 为 dummy renderer，GPU 缓冲读回验证推迟到桌面/模拟器轮；事件总线退出泄漏告警为 SceneTree 脚本退出常态，不影响断言。
+
+## 阶段4 核心玩法实现（CLAUDE-ALL 自主执行，2026-10-26）
+- 范围：P4-01 九宫格池 → P4-09 关卡集成（P4-01~09 全部）。
+- 交付：scripts/gameplay/{pool_service,slot_service,merge_service,combo_state,prop_service,hit_resolver,outcome_state}.gd；game_controller.gd 全量编排（安放/取回/发射事务/合成/道具/步进/胜负/存档恢复）；projectile_system/ball_physics 弹珠携带 color_id+any_color；level_01.json 显式规则；assets/models/json/grid_300.json + tests/fixtures/level_02.json（TEST_ONLY 关卡夹具，不进生产关卡列表）。
+- 自测（headless 可复现）：
+  - tests/unit/test_gameplay.gd 25/25 PASS（池/槽/合成上限拒绝/四道具次数与效果）
+  - tests/integration/test_play.gd 29/29 PASS（发射事务2→1→0、同色删除/异色反弹、连击事件、速度×2=24恢复12、任意指异色消除、失败真值表、通关一次、通关后拒绝、A→B→A恢复、旧代事件拒绝）
+  - 阶段3五套回归全部 PASS
+- 修复记录：GDScript 多行 lambda 实参解析限制→改命名谓词；弹珠颜色随机导致同色命中不确定→测试显式对齐颜色；combo_update 复用 voxel_destroyed 的 event_id 被去重拒绝→hit_resolver 派发独立 event_id。
+- 执行方决策（未用户确认，已在GDD登记范围内）：最小池/槽 UI 与粒子表现并入阶段5统一交付，阶段4仅逻辑层+事件证据。

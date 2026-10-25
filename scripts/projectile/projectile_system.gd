@@ -27,10 +27,11 @@ func _init() -> void:
 	solver = preload("res://scripts/projectile/collision_solver.gd")
 
 
-func spawn(pos: Vector3, vel: Vector3, shot_id: int) -> int:
+func spawn(pos: Vector3, vel: Vector3, shot_id: int, color_id: int = 0, any_color: bool = false) -> int:
 	var id := _next_ball_id
 	_next_ball_id += 1
-	_balls[id] = {"pos": pos, "vel": vel, "active": true, "shot_id": shot_id, "bounces": 0}
+	_balls[id] = {"pos": pos, "vel": vel, "active": true, "shot_id": shot_id, "bounces": 0,
+		"color_id": color_id, "any_color": any_color}
 	return id
 
 
@@ -38,7 +39,8 @@ func ball_snapshot(ball_id: int) -> Dictionary:
 	var b: Dictionary = _balls.get(ball_id, {})
 	if b.is_empty():
 		return {}
-	return {"ball_id": ball_id, "shot_id": b.shot_id, "pos": b.pos, "vel": b.vel, "active": b.active}
+	return {"ball_id": ball_id, "shot_id": b.shot_id, "pos": b.pos, "vel": b.vel,
+		"active": b.active, "color_id": b.get("color_id", 0), "any_color": b.get("any_color", false)}
 
 
 func active_count() -> int:

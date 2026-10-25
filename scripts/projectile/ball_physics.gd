@@ -22,8 +22,9 @@ func set_level(level_id: String) -> void:
 	_level_id = level_id
 
 
-func spawn_ball(world_pos: Vector3, world_vel: Vector3, shot_id: int) -> int:
-	return system.spawn(world_pos, world_vel, shot_id)
+func spawn_ball(world_pos: Vector3, world_vel: Vector3, shot_id: int,
+		color_id: int = 0, any_color: bool = false) -> int:
+	return system.spawn(world_pos, world_vel, shot_id, color_id, any_color)
 
 
 func physics_step(dt: float, world_from_grid: Transform3D, generation: int, tick: int) -> void:

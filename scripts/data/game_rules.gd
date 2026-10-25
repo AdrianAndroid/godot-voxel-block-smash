@@ -14,6 +14,7 @@ var boundary_margin := 8.0
 var initial_props := {"speed_x2": 3, "add_slot": 1, "any_color": 2, "shuffle": 2}
 var turret_ammo_min := 1
 var turret_ammo_max := 5
+var palette_color_ids: Array = [1, 2, 3, 4, 5, 6, 7]  # D05 七色离散 id
 var rotate_sensitivity := 0.01
 var particle_max_total := 512
 var particle_per_hit := 16
