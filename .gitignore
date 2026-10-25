@@ -1,0 +1,15 @@
+# Godot 4 编辑器缓存
+.godot/
+
+# 构建产物（保留目录占位）
+builds/
+!builds/**/.gitkeep
+
+# 签名材料与凭证（永不入库）
+*.keystore
+*.p12
+*.pem
+*.key
+
+# macOS 系统文件
+.DS_Store
