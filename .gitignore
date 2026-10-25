@@ -1,9 +1,11 @@
 # Godot 4 编辑器缓存
 .godot/
 
-# 构建产物（保留目录占位）
-builds/
-!builds/**/.gitkeep
+# 构建产物：忽略 builds 内容，保留目录占位
+builds/*
+!builds/android/
+builds/android/*
+!builds/android/.gitkeep
 
 # 签名材料与凭证（永不入库）
 *.keystore

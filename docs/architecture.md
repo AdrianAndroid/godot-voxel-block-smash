@@ -1,9 +1,9 @@
-# 阶段1架构设计 v3
+# 阶段1架构设计 v6
 
-项目名称固定：godot-voxel-block-smash。依据 GDD v3；阶段1设计完成，Claude 初始化待执行，整体验收未完成。本文件是架构方案，不代表 Godot API 或运行环境已验证。
+项目名称固定：godot-voxel-block-smash。依据 GDD v6；阶段1设计完成，Claude 初始化待执行，整体验收未完成。本文件是架构方案，不代表 Godot API 或运行环境已验证。
 
 ## 完整目标目录
-标记 [后续] 的文件只预留所在目录，阶段1禁止创建空脚本/伪资源。未标记文件均为阶段1交付；现有文档保留。每个没有实际文件的叶目录放 .gitkeep。
+阶段1创建下列所有目录、所有列出的.gd占位脚本及未标记文档/配置。标记[后续]表示业务实现阶段：.gd现在仅写合法extends、职责/任务编号/TODO，不注册class_name、不挂载、不运行、不含玩法；.tscn/.json等资源仍在标记阶段创建，禁止伪资源。已有正式文档不替换为占位。空叶目录放.gitkeep。
 
 ```text
 godot-voxel-block-smash/
@@ -16,6 +16,7 @@ godot-voxel-block-smash/
 │   ├── game-design.md
 │   ├── AI-WORKFLOW.md
 │   ├── dev-step-log.md
+│   ├── plan.md
 │   ├── architecture.md
 │   ├── asset-manifest.md
 │   ├── test-report.md
@@ -25,29 +26,35 @@ godot-voxel-block-smash/
 ├── scenes/
 │   ├── main/main.tscn
 │   ├── voxel/voxel_model.tscn             [后续：阶段3]
-│   ├── projectile/marble.tscn             [后续：阶段4]
+│   ├── projectile/marble.tscn             [后续：阶段3]
 │   ├── level/level_session.tscn           [后续：阶段4]
 │   ├── ui/level_list.tscn                 [后续：阶段5]
 │   ├── ui/hud.tscn                        [后续：阶段5]
 │   └── effects/hit_particles.tscn         [后续：阶段5]
 ├── scripts/
+│   ├── app/event_bus.gd                  [后续：阶段3]
+│   ├── app/game_state.gd                 [后续：阶段3]
+│   ├── data/level_loader.gd              [后续：阶段2最小导入、阶段3完善]
+│   ├── voxel/voxel_manager.gd            [后续：阶段3]
+│   ├── input/input_mutex.gd              [后续：阶段3]
+│   ├── projectile/ball_physics.gd        [后续：阶段3]
 │   ├── app/game_controller.gd            [后续：阶段3骨架、阶段4组装]
 │   ├── level/level_catalog.gd            [后续：阶段3]
 │   ├── level/level_session.gd            [后续：阶段3契约、阶段4实现]
 │   ├── level/level_repository.gd         [后续：阶段3接口，后端待D09]
-│   ├── data/voxel_data.gd                 [后续：阶段3]
-│   ├── data/voxel_loader.gd               [后续：阶段3]
+│   ├── data/voxel_data.gd                 [后续：阶段2最小实现、阶段3完善]
+│   ├── data/voxel_loader.gd               [后续：阶段2最小实现、阶段3完善]
 │   ├── data/game_rules.gd                 [后续：阶段3，仅批准参数]
 │   ├── voxel/voxel_state.gd               [后续：阶段3]
-│   ├── voxel/voxel_renderer.gd            [后续：阶段3]
+│   ├── voxel/voxel_renderer.gd            [后续：阶段2最小实现、阶段3完善]
 │   ├── voxel/voxel_spatial_index.gd       [后续：阶段3]
 │   ├── input/gesture_router.gd            [后续：阶段3]
 │   ├── turret/turret_state.gd             [后续：阶段4]
 │   ├── turret/pool_service.gd             [后续：阶段4]
 │   ├── turret/slot_service.gd             [后续：阶段4]
 │   ├── turret/merge_service.gd            [后续：阶段4]
-│   ├── projectile/projectile_system.gd   [后续：阶段4]
-│   ├── projectile/collision_solver.gd    [后续：阶段4]
+│   ├── projectile/projectile_system.gd   [后续：阶段3物理、阶段4业务接入]
+│   ├── projectile/collision_solver.gd    [后续：阶段3物理、阶段4业务接入]
 │   ├── gameplay/hit_resolver.gd           [后续：阶段4]
 │   ├── gameplay/combo_state.gd            [后续：阶段4]
 │   ├── gameplay/prop_service.gd           [后续：阶段4]
@@ -57,14 +64,16 @@ godot-voxel-block-smash/
 │   ├── effects/audio_presenter.gd         [后续：阶段5，需求确认后]
 │   └── diagnostics/event_recorder.gd      [后续：阶段3]
 ├── assets/
+│   ├── vox_source/.gitkeep
 │   ├── source/goxel/.gitkeep
 │   ├── source/reference/.gitkeep
 │   ├── models/json/.gitkeep
 │   ├── levels/.gitkeep
 │   ├── materials/.gitkeep
 │   ├── textures/ui/.gitkeep
+│   ├── textures/particle/.gitkeep
 │   ├── audio/sfx/.gitkeep
-│   └── licenses/.gitkeep
+│   └── license/.gitkeep
 ├── tools/voxel_export/.gitkeep
 ├── tests/
 │   ├── data/.gitkeep
@@ -83,7 +92,7 @@ godot-voxel-block-smash/
 不创建 .git 作为占位文件夹；Git 初始化不在本次任务内。忽略 .godot/、构建产物、签名材料和凭证；保留源码 .uid。导出时排除源素材、测试和报告。源码素材和可发布资产分离。
 
 ## GDScript 规范
-文件/目录/函数/变量/信号 snake_case；类名/节点 PascalCase；常量和枚举成员 UPPER_SNAKE_CASE；私有实现前缀 _。UTF-8、LF、制表符缩进。公开接口明确类型；每个脚本单一职责，避免无依据 Variant。信号表示已提交事件，如 voxel_removed、shot_fired；请求通过方法/命令提交，UI 不直接改状态。
+文件/目录/函数/变量/信号 snake_case；类名/节点 PascalCase；常量和枚举成员 UPPER_SNAKE_CASE；私有实现前缀 _。UTF-8、LF、制表符缩进。公开接口明确类型；每个脚本单一职责，避免无依据 Variant。所有跨模块通知只走EventBus，事件名以本文固定清单为准；UI请求由控制器受理，不直接改状态。
 
 依赖通过构造/显式配置/导出引用注入，不依赖跨模块硬编码节点路径、不形成循环依赖。阶段1不引入 Autoload。变量和日志明确单位：时间秒、速度世界单位/秒、格坐标整数、颜色离散 ID。命名不能把待决参数写死为玩法。
 
@@ -93,15 +102,15 @@ godot-voxel-block-smash/
 | VoxelLoader / VoxelData / GameRules | 解析不可变模型、调色板和批准参数；不操作 UI | 非法坐标/色/数量拒绝；错误定位字段；规则带 GDD 版本 |
 | VoxelState / SpatialIndex | 存活集、稳定ID、局部网格索引 | 重复删除拒绝；alive_count等于存活集大小；已删块不再被候选查询返回 |
 | VoxelRenderer | 单 MultiMesh、共享网格/材质、实例颜色、slot映射 | 实例数等于存活数；交换删除后两向映射一致；没有逐块Node |
-| GestureRouter | 指针起始归属、模型旋转意图、UI隔离 | UI起始指针永不旋转；取消/失焦清空归属；中心不漂移 |
-| TurretState / PoolService / SlotService | 炮台ID/颜色/弹量、9格池和最多5槽的所有权 | 一个炮台只有一个容器位置；拒绝安放不修改状态；计数不负 |
+| GestureRouter | 指针起始归属、模型旋转意图、UI隔离 | 仅模型空白交互区域起始的指针可请求旋转，命中区域判定待D06；UI起始指针永不旋转；取消/失焦清空归属；中心不漂移 |
+| TurretState / PoolService / SlotService | 炮台ID/颜色/弹量、9格池和最多5槽的所有权 | 一个炮台只有一个容器位置；空池格不可选，拒绝安放不修改状态；计数不负 |
 | MergeService | 仅池内同色合成，检查批准上限，原子提交 | 弹量相加守恒，源唯一销毁；失败无部分修改 |
 | ProjectileSystem / CollisionSolver | 固定物理步推进、扫掠查询、边界反射 | 记录碰撞时间/法线/速度；高速和旋转模型夹具不漏碰撞 |
 | HitResolver | 根据发射快照和道具判色，提交删除 | 同色或有效任意指才删除；每个voxel_id最多成功一次 |
-| ComboState / OutcomeState | 按批准范围维护连击、评估通关/失败 | 连击只随成功删除累加；停止/出界立即归零且不改伤害；胜负事件互斥、只发一次；失败边界待D08 |
+| ComboState / OutcomeState | 按批准范围维护连击、评估通关/失败 | 连击只随成功删除累加；出界立即归零且不改伤害；胜负事件互斥、只发一次；失败边界待D08 |
 | PropService | 速度×2/加槽位/任意指/随机排策略 | 道具适用范围、消费前后状态可查；槽上限5；随机种子可复现 |
 | GameController | 接收意图、协调提交、发布事件 | 同一输入重复提交不重复扣弹；状态完成后才发布给HUD/效果 |
-| HudPresenter / HitEffects / AudioPresenter | 只读状态展示、限额效果/音效 | HUD弹量/连击/余块同步；粒子存活数与寿命不超过批准上限；不得修改玩法 |
+| HudPresenter / HitEffects / AudioPresenter | 只读状态展示、限额效果/音效 | HUD关卡号/弹量/连击/余块/四道具次数同步，固定区域矩形可记录；碎裂粒子禁用碰撞，不进入空间索引或命中候选，T22对比开关效果的轨迹和命中序列；粒子存活数与寿命不超过批准上限；不得修改玩法 |
 | LevelCatalog / LevelSession / LevelRepository | 关卡到模型映射、每关独立快照、存取接口；持久化后端待D09 | A/B切换无串状态；旧会话事件拒绝；恢复存活集合与HUD一致 |
 | EventRecorder | 结构化事件/指标采样、构建与运行标识 | 每项用例能从日志关联输入→状态→结果；发布构建关闭高频日志 |
 
@@ -116,7 +125,7 @@ Godot空间Y向上，格中心为格坐标乘voxel_size；加载时减包围盒�
 ### 运行时记录
 - Turret：turret_id、color_id、ammo_count、has_fired、唯一位置(pool/slot及索引)；位置变动原子提交。
 - Shot：shot_id、源turret_id、color_id、初始位置/速度、已批准道具快照；炮台归零销毁不影响已发射球。
-- Projectile：projectile_id、shot_id、位置、速度、活跃状态；连击归属和停止参数待 D03。
+- Projectile：projectile_id、shot_id、位置、速度、活跃状态；连击归属待 D03。
 - Session：初始/存活体素数、终局枚举(RUNNING/WON/LOST)、池/槽、已解锁槽数、道具次数和待发效果状态、随机种子、事件序号。绑定level_id和session_generation；通过LevelRepository独立保存，是否跨进程持久化待D09。
 
 ### 关卡与保存边界
@@ -130,29 +139,58 @@ LevelRepository封装load/save；D09明确后选择会话内存或user://下文�
 ## 碰撞和渲染方案
 模型只有一个MultiMeshInstance3D；删除采用尾部存活实例交换，更新 voxel_id↔instance_slot，再收缩显示实例数。不逐帧重建全部资源、不逐块创建碰撞节点。调色板修改不是玩法功能。
 
-碰撞采用局部网格空间索引和球体连续扫掠的候选/窄相分离；世界轨迹变换到模型局部空间，考虑球半径和接触法线。一次物理步内按最早命中推进剩余时间，防止速度×2穿透；同距离候选用稳定ID打破平局。反弹后处理接触容差，避免零时间反复碰撞。迭代上限/容差需基准验证并记录；达上限不得静默丢弃位移，应报告诊断。异色反射方向满足 v_out=v_in-2(v_in·n)n（静态无损反射测试夹具），实际能量/阻尼待D03。同色删除后的轨迹也待D03。
+碰撞采用局部网格空间索引和球体连续扫掠的候选/窄相分离；世界轨迹变换到模型局部空间，考虑球半径和接触法线。一次物理步内按最早命中推进剩余时间，防止速度×2穿透；同距离候选用稳定ID打破平局。反弹后处理接触容差，避免零时间反复碰撞。迭代上限/容差需基准验证并记录；达上限不得静默丢弃位移，应报告诊断。异色反射方向满足 v_out=v_in-2(v_in·n)n（静态无损反射测试夹具），实际能量/阻尼待D03。同色删除后剩余弹道继续反弹；当前接触点是否立即反射及法线规则仍待D03。
 
-飞行时旋转是否允许未定：若允许，必须设计连续变化碰撞体的处理并验证；不得自行冻结模型或只变换渲染。停止、场景边界、多球上限未定前不编写正式运动规则。
+飞行时旋转是否允许未定：若允许，必须设计连续变化碰撞体的处理并验证；不得自行冻结模型或只变换渲染。场景边界、多球上限未定前不编写正式运动规则。
 
-最终场景预留 Main / LevelSession(ModelPivot、Camera3D、ProjectileRoot、Arena、EffectsRoot) / CanvasLayer(LevelList、HUD含池和槽)；只有ModelPivot接收旋转，CanvasLayer不得成为其子节点；阶段1只建 Main:Node3D 空根，不创建相机、灯光和玩法组件。
+最终场景预留 Main / LevelSession(ModelPivot、Camera3D、ProjectileRoot、Arena、EffectsRoot) / CanvasLayer(LevelList、HUD含池和槽)；只有ModelPivot接收旋转，CanvasLayer不得成为其子节点；阶段1建立Main:Node3D及Camera3D（current=true）、WorldEnvironment（环境光）；不挂载占位脚本或玩法组件。后续组装复用相机和环境，不能生成重复相机。
 
 ## 可观测性与性能风险
 事件采用JSONL：run_id、build_id、gdd_version、frame、physics_tick、sequence、event、相关对象ID、before/after、reason；碰撞附位置/法线/前后速度，道具附适用范围，刷新附种子，UI附绑定值。禁止每帧全量写出所有体素；诊断可开关、采样并统计丢弃事件，性能跑分须注明日志模式。
 
-重点风险：高球速穿透、旋转碰撞错位、多球重复删除、尾交换映射错误、合成复制弹量、道具归属泄漏、UI手势串入、透明效果过绘、模拟器图形兼容和日志I/O干扰。以T01～T21验证，不以“好看/顺滑”结论验收。所有布局、颜色、粒子和音效表现由测试执行方给现象描述及数值；Codex不做视觉预览。
+重点风险：高球速穿透、旋转碰撞错位、多球重复删除、尾交换映射错误、合成复制弹量、道具归属泄漏、UI手势串入、透明效果过绘、模拟器图形兼容和日志I/O干扰。以T01～T24验证，不以“好看/顺滑”结论验收。所有布局、颜色、粒子和音效表现由测试执行方给现象描述及数值；Codex不做视觉预览。
 
 基准覆盖300/1200块、批准的最大球数和粒子峰值，收集FPS、p95/p99帧时间、内存峰值、节点/实例/粒子数与物理步耗时。D07未批准前只记录基准，不宣称性能通过；模拟器结果不能由桌面运行代替。
 
 ## 阶段1验收
 Claude完成P1-01～P1-06，目录/文档齐备，固定项目名称，实际Godot4版本和渲染器有记录，空工程导入/主场景启动均有命令/退出码/日志，无玩法代码或提前资产。Codex收到review-context后才能标记阶段1整体验收通过。后续各阶段按AI-WORKFLOW顺序另发任务。
 
-## v3新增规则的实现边界与观测
+## v6新增规则的实现边界与观测
 - 取回：SlotService验证未发射资格及目标空格，原子迁移同一个炮台ID；池满不覆盖其他炮台。具体未发射定义和池满交互待D01。T15验证。
 - 合成：只允许pool→pool，先检查同色/位置/正整数数量和上限再相加；超限不得自行裁剪或溢出。正式上限和超限规则待D02，T16验证。
-- 下一发道具：PropService区分库存次数、待发效果和Shot快照；成功发射绑定唯一shot_id，消费时点待D04；已发射球不受后续激活影响。结束清理该球效果，次数零则UI隐藏。T08/T10/T17验证。
-- 弹珠终止：有效边界外直接结束，不得把所有边界都实现成反弹墙；停止/出界仅提交一次projectile_ended，同次状态提交清空对应连击；HUD下个更新帧呈现0。边界形状、停止阈值和多球归属待D03。
+- 下一发道具：PropService区分库存次数、待发效果和Shot快照；成功发射绑定唯一shot_id并清除对应待发标记；任意指能力留在该球快照直到球结束，不能因清除待发标记使已发射球失效；库存扣次时点待D04；已发射球不受后续激活影响。结束清理该球效果，次数零则UI隐藏。T08/T10/T17验证。
+- 弹珠终止：有效边界外直接结束，不得把所有边界都实现成反弹墙；出界仅提交一次projectile_ended，同次状态提交清空对应连击；HUD下个更新帧呈现0。边界形状和多球归属待D03。
 - 胜负：OutcomeState读取一次完整事务后的余块/池/槽/活跃球/道具快照；RUNNING只允许一次转为WON或LOST。原始失败条件保留在G14；D08明确前不得编写正式失败谓词或擅定胜负优先级。测试矩阵T18/T19必须覆盖每种可继续手段。
 - 固定UI与纯色：模型用离散color_id对应纯色，不靠近似RGB命中；同一color_id的炮台/球/块需共同查表。日志记录UI矩形与模型变换，旋转前后UI位置一致；实际颜色和布局由测试方描述验证，Codex不看图。
 
 ## 后续任务排序（仅规划，未授权启动）
-阶段2按素材确认→来源记录→Goxel处理→schema v2导出→轴向/颜色验证。阶段3按数据/关卡契约→体素状态索引→单MultiMesh→输入归属→事件与快照接口。阶段4按池槽迁移/取回→有限合成→逐个发射→连续碰撞/颜色→生命周期连击→消耗型道具→胜负→关卡切换恢复。阶段5绑定关卡列表/HUD和受限效果，阶段6打包适配，阶段7按T01～T21闭环；每阶段另发明确任务并通过门禁。
+阶段2按素材确认→来源记录→Goxel处理→schema v2导出→最小导入生成验证→UI占位。阶段3扩展已有导入器，完成体素管理、事件总线、球体连续碰撞、输入互斥和关卡接口。阶段4按池槽迁移/取回→有限合成→逐个发射→连续碰撞/颜色→生命周期连击→消耗型道具→胜负→关卡切换恢复。阶段5绑定关卡列表/HUD和受限效果，阶段6打包适配，阶段7按T01～T24闭环；每阶段另发明确任务并通过门禁。
+
+## 飞书交付补充的架构边界
+T23采用固定种子重复操作、预热后内存趋势和节点/球/粒子回收计数，轮数与阈值待D07；重置入口和快照处理待D10，未明确前不增加ResetService。T24验证关卡号及区域布局。D11未明确前仅保留既有四道具，不引入穿透道具；不增加商业解锁、分享、排行榜、血条或云同步模块。
+
+## 模块入口与通知契约（按本轮用户补充）
+- level_loader：关卡JSON入口，调用VoxelLoader/Data解析和Renderer批量生成；不维护第二份体素状态。
+- voxel_manager：组合VoxelState/SpatialIndex/Renderer，统一查询与删除入口；不逐块创建节点。
+- ball_physics：组合ProjectileSystem/CollisionSolver，推进球体及报告命中；颜色消除由HitResolver负责。
+- input_mutex：输入归属入口，委托GestureRouter生成旋转意图；不重复监听同一输入。
+- game_state：对外提供LevelSession/OutcomeState已提交只读状态，不复制另一套权威状态。
+- event_bus：唯一跨模块通知通道；实例由组装层注入，不使用大量节点引用、不硬编码跨模块NodePath。模块内部组合可持有自己的组件，业务命令由控制器按显式接口串行提交。通知不得直接调用另一个模块的节点方法。
+
+### 固定事件清单
+所有事件带meta：event_id、level_id、session_generation、sequence、physics_tick；规定的位置参数保持在前，meta作为末尾上下文。ball/block/block_data都是只读数据快照与稳定ID，不是可释放Node引用。除碰撞事实事件外，状态变化事件只在事务成功提交后发布。
+
+| 事件（参数） | 发布时点/发布者 | 消费者与观测验证项 |
+|---|---|---|
+| level_loaded(level_data, meta) | LevelLoader经控制器完整装载/恢复后 | HUD/渲染适配；当前关与模型一致，仅成功装载一次 |
+| voxel_destroyed(block_data, meta) | VoxelManager经HitResolver确认成功删除后 | 效果/诊断接收已提交结果；连击由控制器在同次事务内更新，订阅不再次累加；同块最多一次，重复消息不重复计数 |
+| ball_hit_voxel(ball, block, meta) | BallPhysics产生最早接触事实，尚未决定颜色删除 | 控制器/HitResolver处理；同event_id只处理一次，含位置/法线/速度 |
+| ball_out_of_bounds(ball, meta) | BallPhysics确认出界并提交失活后 | 控制器清理连击/快照；每球一次，禁止通知消费者再次销毁同球 |
+| turret_fire(shot, meta) | 控制器成功生成球并扣弹后 | HUD/音效/诊断；不是点击请求，失败无事件 |
+| turret_merged(merge_data, meta) | MergeService原子合成后 | HUD/音效/诊断；源ID、结果ID和弹量守恒可查 |
+| combo_update(combo_num, meta) | ComboState提交值后 | HUD/诊断；数值一致，出界清零提交在同一物理事务内 |
+| level_win(result, meta) | OutcomeState进入WON后 | 弹窗/音效；一次且与lose互斥 |
+| level_lose(result, meta) | OutcomeState进入LOST后 | 弹窗/音效；满足D08批准条件，一次且与win互斥 |
+| item_activated(item_id, item_data, meta) | PropService成功激活后 | HUD/反馈；含库存与待发前后值，扣次时点按D04 |
+
+事件不是任意异步修改状态的许可。物理步中控制器按命中→状态提交→连击/终局提交的明确顺序处理；渲染与音效只观察。总线串行派发并防重入，派生事件排序记录sequence；监听方不得再次发布同一事件形成环。切关解绑旧订阅，旧generation消息拒绝；测试验证重复、乱序、出界清零、切关和订阅计数。通知清单扩展须先更新本契约和对应测试，不让执行Agent自行改名。

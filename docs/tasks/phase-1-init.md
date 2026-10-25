@@ -1,15 +1,15 @@
-# P1-INIT-v3：Claude 工程初始化任务
+# P1-INIT-v6：Claude 工程初始化任务
 
 状态：文档任务已准备，未实际调度。唯一执行人Claude Code，评审Codex。依次执行P1-01～P1-06；本文件替代旧任务版本，不重复创建已有设计文档。
 
 ## 前置及允许范围
-先读三份基础文档、architecture.md、本任务；确认GDD v3。允许创建目标目录、基础配置、空Godot工程、文档模板和验证报告；禁止改GDD/架构、制作素材、编写玩法/工具脚本、进入阶段2或替Codex验收。缺少Godot时记录阻塞，不自行安装升级。检查到未知已有文件先保留并报告，不覆盖。Git初始化、联网拉素材、安卓打包不在本任务内。
+先读三份基础文档、architecture.md、本任务；确认GDD v6。允许创建目标目录、基础配置、基础Godot工程、文档模板和验证报告；允许创建architecture列出的可解析占位.gd；禁止改GDD/架构、制作素材、编写玩法/工具实现、进入阶段2或替Codex验收。缺少Godot时记录阻塞，不自行安装升级。检查到未知已有文件先保留并报告，不覆盖。Git初始化、联网拉素材、安卓打包不在本任务内。
 
 ## P1-01 目录
 - 前置：完成文档阅读。
-- 步骤：逐项按architecture目标树建立所有目录。标[后续]的文件不创建；没有实际文件的叶目录放.gitkeep。已有文档原样保留。
+- 步骤：逐项按architecture目标树建立所有目录。标[后续]的.gd必须创建占位，其余后续资源不创建；每个占位仅含extends RefCounted、职责/阶段/任务编号注释和TODO，不含class_name、信号、业务方法，不挂载；具体基类在实现阶段按职责调整；没有实际文件的叶目录放.gitkeep。已有文档原样保留。
 - 交付：目录清单及与设计的比对结果。
-- 观测验证项：树中每个目标目录存在；无空.gd、伪JSON/资源；无漏掉的projectile/turret/diagnostics/level及tests/persistence、assets/levels等目录。
+- 观测验证项：树中每个目标目录存在；所有列出的.gd均有合法最小内容，能被解析；无伪JSON/资源；无漏掉的projectile/turret/diagnostics/level及tests/persistence、assets/vox_source、assets/levels、assets/textures/ui、assets/textures/particle、assets/license等目录。
 - 失败处理：目录冲突记录路径并停止受影响项。
 
 ## P1-02 工程说明和配置
@@ -19,18 +19,18 @@
 - 观测验证项：README不声称游戏可玩；.uid不被忽略；builds/android/.gitkeep可保留；不生成密钥。
 - 失败处理：不覆盖已有未知配置，交付差异说明。
 
-## P1-03 空Godot工程
+## P1-03 基础Godot工程
 - 前置：P1-02完成，找到本机实际Godot4可执行文件。
-- 步骤：记录路径和准确版本；创建project.godot，名称godot-voxel-block-smash，主场景scenes/main/main.tscn。场景仅Main:Node3D。选择兼容性渲染器并记录实际配置；具体设置以本机Godot版本验证，不伪造已支持配置。
+- 步骤：记录路径和准确版本；创建project.godot，名称godot-voxel-block-smash，主场景scenes/main/main.tscn。场景为Main:Node3D，子节点Camera3D（current=true）和WorldEnvironment（配置环境光）。选择兼容性渲染器并记录实际配置；具体设置以本机Godot版本验证，不伪造已支持配置。
 - 交付：两文件、版本和渲染器记录。
-- 观测验证项：项目名称和主场景正确，根节点类型正确，无相机/灯光/UI/脚本/Autoload。
+- 观测验证项：项目名称和主场景正确，根节点类型、相机与环境光配置正确，无UI/玩法脚本挂载/Autoload。
 - 失败处理：没有Godot4则记录BLOCKED，不生成已运行声明；可继续无依赖的文档项。
 
 ## P1-04 文档占位模板
 - 前置：P1-01完成，可与P1-03阻塞独立处理。
 - 步骤：创建以下模板；真实未知值写“待填写”，测试状态写NOT_RUN。已有正式内容不得替换为模板。
-- docs/asset-manifest.md：路径、来源链接、作者、许可/限制、模型数量、调色板、Goxel版本、轴转换、JSON schema版本、校验结果。
-- docs/test-report.md：构建/GDD/用例编号、环境设备/API/ABI/分辨率/渲染器、种子/夹具、步骤、预期/实际、PASS/FAIL/BLOCKED/NOT_RUN、行为日志路径、画面现象文字、性能指标/阈值、缺陷复现。预列T01～T21为NOT_RUN，D项依赖说明待补；不要把桌面空工程检查当玩法通过。
+- docs/asset-manifest.md：路径、来源链接、作者、许可原文/本地存档/限制、取得日期、修改记录、自制或AI生成来源、CC-BY/付费/授权不明/抠图排除检查、模型数量、调色板、Goxel版本、轴转换、JSON schema版本、校验结果。
+- docs/test-report.md：构建/GDD/用例编号、环境设备/API/ABI/分辨率/渲染器、种子/夹具、步骤、预期/实际、PASS/FAIL/BLOCKED/NOT_RUN、行为日志路径、画面现象文字、性能指标/阈值、缺陷复现。预列T01～T24为NOT_RUN，D项依赖说明待补；不要把桌面空工程检查当玩法通过。
 - docs/review-context.md：任务编号、需求映射、文件清单、完成/阻塞/未验证项、环境、命令/退出码/证据、风险和待评审点；P1-06填充。
 - 交付：三模板。
 - 观测验证项：视觉相关项有文字观测栏；性能有实际值及批准阈值栏；没有伪造PASS。
@@ -40,7 +40,7 @@
 - 前置：P1-01～P1-04相应产物存在；运行验证依赖Godot4可执行。
 - 步骤：核对目标树、文件内容与禁止项；通过本机Godot帮助确认参数，执行无界面编辑器导入/退出及空主场景启动/退出。常见命令形式为实际Godot路径加 --headless --path 项目路径 --editor --quit，以及 --headless --path 项目路径 --quit-after 2；以安装版本支持项为准。
 - 交付：reports/desktop/p1-init-validation.md与原始输出日志；每条记录完整命令、时间、退出码和错误输出。
-- 观测验证项：两次执行退出成功、无解析/资源加载错误；记录警告并解释；场景结构静态检查仅Main根；文档/目录核对逐项通过。
+- 观测验证项：两次执行退出成功、无解析/资源加载错误；记录警告并解释；静态检查Main/Camera3D/WorldEnvironment及占位脚本；逐个占位脚本执行本机Godot支持的解析检查并保留退出码；执行端提供工程打开/运行现象文字；文档/目录核对逐项通过。
 - 失败处理：原样保留失败输出、标FAIL或BLOCKED，不忽略退出码；无界面验证不代表桌面画面或安卓已验收。
 
 ## P1-06 交接
