@@ -85,3 +85,19 @@
 【下发给Claude的任务】：无（本轮执行方即Claude Code）；待Codex评审意见，如有返工按具体P1编号执行。
 【风险记录】：file-audit问题②③④为Codex文档修订项（plan事件表述、阶段4/5文件边界、level_01.json文件级契约），未触碰；GitHub远程未配置（gh登录失效，待用户授权gh auth login），不能宣称已同步；gl_compatibility在安卓模拟器的兼容性待阶段6实测；headless验证不代表画面/性能验收。
 【下一步触发条件】：Codex读取docs/review-context.md与reports/desktop/p1-init-validation.md评审；通过则标记阶段1验收完成并按D05门禁评估阶段2任务下发；发现问题按P1编号下发定界修复。
+
+【时间】：2026-10-26（Asia/Shanghai）
+【执行人】：Codex
+【完成工作】：按用户最新指令改为Claude连续自主执行模式，取消Codex逐项/阶段评审等待；在工作流、计划、架构、GDD和阶段1任务顶部加入优先授权，新增tasks/claude-autonomous.md。授权Claude自行修订工程文档、选择并记录可配置原型默认值、素材取舍、自测修复与推进；保留七阶段串行、核心玩法、素材限制和真实测试证据。修正file-audit②事件分类、③阶段4最小UI/粒子与阶段5完善边界、④最小关卡JSON契约。
+【当前进度】：P1初始化已交付，静态结构和既有headless日志已核对；不再等待Codex整体验收。桌面有界面现象仍未验证，按新授权不阻塞继续；阶段2～7由Claude自主完成。
+【下发给Claude的任务】：CLAUDE-ALL，读取docs/tasks/claude-autonomous.md，核实现有产物后从P2-01连续执行至P7-04；先记录D05调色板默认方案，再逐项解决相关D项；每阶段自检后自动继续，最终交付APK/哈希、模拟器测试与性能报告。仅落盘任务，本轮未启动Claude会话。
+【风险记录】：用户取消的是Codex评审依赖，不是测试真实性要求；headless不等于画面/性能验收，安卓gl_compatibility待实测。无回复的调色板提案不算确认；默认值须标执行方决定。工具、权限、凭证或模拟器缺失仍可能构成外部阻塞，不伪报完成。
+【下一步触发条件】：Claude直接按CLAUDE-ALL继续，无需Codex回复或批准；最终交付或遇真实外部阻塞时向用户汇报。
+
+【时间】：2026-10-26（Asia/Shanghai）
+【执行人】：Claude Code
+【完成工作】：阶段2完成。GDD新增"执行默认值决策"表（D01～D11全部登记原型默认值：槽初值3/上限99合成/球速12/出界立方体边界/道具次数3-1-2-2/七色调色板/竖屏/API33模拟器阈值/失败真值表/user://存档/HUD重置/不引入穿透道具）。P2-01：程序化自制青蛙frog_01.vox（367块：绿286/白56/黄17/深灰8，符合300～1200）+非对称三轴夹具axis_fixture.vox；Goxel无CLI能力（--help拉起GUI已终止），素材走自制兜底路径并如实登记asset-manifest。P2-02：vox2json.py（schema_version=2，vox(x,y,z)→godot(x,z,-y)，最小角归一，精确RGB匹配七色，重复坐标/未知色/数量越界拒绝）导出frog_01.json；level_01.json最小关卡配置（rules空对象，阶段4填充）。P2-03：VoxelData/VoxelLoader/VoxelRenderer最小实现（单MultiMesh+CPU镜像）；T01导入分支13断言全PASS（300/1200合法、重复坐标/非法色/数量/schema拒绝、frog 367块、单MultiMesh无逐块节点、颜色镜像一致、轴向夹具映射正确）。P2-04：决策UI全部程序生成StyleBoxFlat+内置字体，不引入外部素材，登记asset-manifest。发现并修复两处执行缺陷：loader Vector3字符串索引bug、headless dummy渲染器MultiMesh缓冲不回读（改CPU镜像断言并记录限制）。修复README尾部异常行并更新执行模式说明。
+【当前进度】：阶段1、2完成；阶段3开始（核心底层框架）。
+【下发给Claude的任务】：P3-01～P3-05连续执行：体素管理器（存活集/空间索引/尾交换删除）、事件总线+EventRecorder、球体连续碰撞物理、输入互斥与手势路由、关卡数据接口。
+【风险记录】：GPU缓冲颜色回读在headless不可用，桌面/模拟器轮次需补验（已记test-report）；level_02夹具关卡未建（阶段4任务）；D项默认值未经用户确认（已按要求登记）；GitHub推送仍阻塞于gh登录。
+【下一步触发条件】：自动继续P3-01，无需等待。

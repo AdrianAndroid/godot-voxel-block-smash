@@ -1,5 +1,20 @@
 # 阶段1架构设计 v6
 
+## 当前执行授权：Claude连续完成（2026-10-26）
+
+用户最新授权优先于本文后面的历史双Agent规则：Codex不再参与逐项或阶段评审，Claude负责从现有交付继续完成全部七阶段，包括必要的架构/文档修订、实现、自测、问题分析、修复和最终交付。不得等待Codex批准、另发任务或review-context回传后再继续。
+
+- 七阶段仍按顺序推进；每阶段由Claude核对交付和可观测自测，记录真实结果后自动进入下一阶段，不跨阶段并行开发。review-context.md改作自检/交接记录，不是等待批准的门槛。
+- 已完成的阶段1初始化不重做。现有headless证据按实际范围保留；桌面有界面现象未验证如实记录，不阻塞后续开发。安卓兼容性和性能仍必须在阶段6/7实测，不能以headless结果替代。
+- Claude可自行解决文件审计②③④以及其他工程设计细节，保持核心玩法不变，所有决策同步相关文档。
+- D01～D11中未指定的参数或边界，Claude可为学习原型选择保守、可配置、可测试的默认值，先在game-design.md新增“执行默认值决策”逐项登记依据、数值/行为、影响和用例，再实现；不得声称用户已确认。无需为一般参数等待用户。此前提议但未得到回答的调色板不算用户批准，可作为执行方方案重新记录。
+- 不扩展广告、付费、稀有炮台、连击奖励、云同步或第五种道具；D11按不引入穿透道具处理。失败判定须保留槽内炮台、活跃球和恢复手段等继续消除可能，不能仅以池空判失败。
+- 素材禁用规则保持；Claude可自行选择符合规则的素材并保存逐资产许可证据，缺素材优先Goxel自制，无需等Codex取舍。不得伪造许可或测试结果。
+- 一般错误由Claude自行定位修复并回归。真实外部阻塞（缺权限、凭证、无法取得的工具/模拟器）须记录并继续无依赖任务；必要时直接向用户请求所缺资源，不等待Codex。系统权限审批仍须遵守。
+- 每阶段更新dev-step-log.md、review-context.md及test-report.md。实际通过标PASS，未运行标NOT_RUN，环境阻塞标BLOCKED；不能为了“一口气完成”伪报成功。
+- 终点：可安装最终APK、对应构建标识/哈希、完整源码/资源许可、模拟器T01～T24结果与性能数据、缺陷修复回归报告。若外部阻塞导致终点未达成，明确剩余项与恢复命令；不自动对外发布。
+
+
 项目名称固定：godot-voxel-block-smash。依据 GDD v6；阶段1设计完成，Claude 初始化待执行，整体验收未完成。本文件是架构方案，不代表 Godot API 或运行环境已验证。
 
 ## 完整目标目录
@@ -28,9 +43,9 @@ godot-voxel-block-smash/
 │   ├── voxel/voxel_model.tscn             [后续：阶段3]
 │   ├── projectile/marble.tscn             [后续：阶段3]
 │   ├── level/level_session.tscn           [后续：阶段4]
-│   ├── ui/level_list.tscn                 [后续：阶段5]
-│   ├── ui/hud.tscn                        [后续：阶段5]
-│   └── effects/hit_particles.tscn         [后续：阶段5]
+│   ├── ui/level_list.tscn                 [阶段4最小版本，阶段5完善]
+│   ├── ui/hud.tscn                        [阶段4最小版本，阶段5完善]
+│   └── effects/hit_particles.tscn         [阶段4最小版本，阶段5完善]
 ├── scripts/
 │   ├── app/event_bus.gd                  [后续：阶段3]
 │   ├── app/game_state.gd                 [后续：阶段3]
@@ -194,3 +209,7 @@ T23采用固定种子重复操作、预热后内存趋势和节点/球/粒子回
 | item_activated(item_id, item_data, meta) | PropService成功激活后 | HUD/反馈；含库存与待发前后值，扣次时点按D04 |
 
 事件不是任意异步修改状态的许可。物理步中控制器按命中→状态提交→连击/终局提交的明确顺序处理；渲染与音效只观察。总线串行派发并防重入，派生事件排序记录sequence；监听方不得再次发布同一事件形成环。切关解绑旧订阅，旧generation消息拒绝；测试验证重复、乱序、出界清零、切关和订阅计数。通知清单扩展须先更新本契约和对应测试，不让执行Agent自行改名。
+
+## 关卡配置JSON契约（阶段2最小版本）
+
+assets/levels/level_01.json为对象，必填schema_version（整数1，关卡配置版本，与模型schema_version=2独立）、level_id（非空字符串，第一关level_01）、display_number（正整数1）、model_path（res://assets/models/json/frog_01.json）、model_revision（非空版本字符串）、rules（对象）。阶段2rules允许空对象，仅进行导入验证；阶段4必须按GDD执行默认值决策填入正式玩法所需规则，空rules不得启动完整游戏。未知字段拒绝并报字段路径；schema不支持、必填缺失、类型错误、模型不存在或模型校验失败时整关加载失败，不部分修改当前会话、不发布level_loaded。model_path限制在res://assets/models/json/且禁止路径穿越。model_revision变更必须使旧快照重新校验，禁止静默套用。Claude在阶段4把rules各字段、类型、约束和默认值明确落文档后实现，不将阶段2空对象隐式解释为正式默认玩法。
