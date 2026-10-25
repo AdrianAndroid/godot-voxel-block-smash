@@ -28,3 +28,12 @@
 
 - 不使用小程序截图抠图；不使用授权不明素材；不使用 CC-BY（避免署名义务纠纷）；不使用付费素材。
 - 素材不足时：先手动 Goxel 绘制兜底，其次由 Codex 提出 AI 生成 UI 图标方案，来源与授权统一登记于本表。
+
+## 音效（自制，程序化生成）
+| 文件 | 用途 | 来源 | 许可 |
+|---|---|---|---|
+| assets/audio/sfx/fire.wav | 发射 | tools/gen_sfx.py 正弦合成 880Hz/0.12s | 自研无许可风险 |
+| assets/audio/sfx/shatter.wav | 击碎 | gen_sfx.py 扫频1200→400Hz/0.18s | 同上 |
+| assets/audio/sfx/merge.wav | 合成 | gen_sfx.py 双音660+990Hz/0.15s | 同上 |
+| assets/audio/sfx/win.wav | 通关 | gen_sfx.py 琶音523/659/784Hz | 同上 |
+| assets/audio/sfx/lose.wav | 失败 | gen_sfx.py 扫频440→220Hz/0.6s | 同上 |

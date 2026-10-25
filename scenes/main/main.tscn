@@ -1,4 +1,6 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/app/main.gd" id="1"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
@@ -8,10 +10,15 @@ ambient_light_color = Color(1, 1, 1, 1)
 ambient_light_energy = 0.6
 
 [node name="Main" type="Node3D"]
+script = ExtResource("1")
 
 [node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.923, -0.385, 0, 0.385, 0.923, 0, 5, 12)
+transform = Transform3D(1, 0, 0, 0, 0.923, -0.385, 0, 0.385, 0.923, 0, 5, 14)
 current = true
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866, -0.25, 0.433, 0, 0.866, 0.5, -0.5, -0.433, 0.75, 0, 8, 4)
+shadow_enabled = false
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_main")

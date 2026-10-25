@@ -123,3 +123,9 @@
   - 阶段3五套回归全部 PASS
 - 修复记录：GDScript 多行 lambda 实参解析限制→改命名谓词；弹珠颜色随机导致同色命中不确定→测试显式对齐颜色；combo_update 复用 voxel_destroyed 的 event_id 被去重拒绝→hit_resolver 派发独立 event_id。
 - 执行方决策（未用户确认，已在GDD登记范围内）：最小池/槽 UI 与粒子表现并入阶段5统一交付，阶段4仅逻辑层+事件证据。
+
+## 阶段5 UI/音效/特效（CLAUDE-ALL 自主执行，2026-10-26）
+- 范围：P5-01~P5-05。HUD（顶部关卡号/剩余数、槽行、九宫格、四道具、用尽隐藏、选中高亮，全程序化 StyleBoxFlat 屏幕空间固定布局不随模型旋转）；关卡列表 presenter；命中粒子（一次性 CPUParticles3D，16/次、寿命0.8s、总量上限512超限丢弃计数）+ 连击飘字 Label3D；五类正弦 WAV（tools/gen_sfx.py，无外部素材）；AudioPresenter 一事件一播放（总线 event_id 去重保证）；main.gd/main.tscn 装配（手势旋转、关卡列表进入、终局存档）。
+- 清理：删除 7 个已被正式实现取代的占位脚本（scripts/effects、turret、ui 目录）。
+- 自测：tests/unit/test_presentation.gd 22/22 PASS（HUD 同步/隐藏/高亮、音效计数与去重、粒子上限 4 放行 1 丢弃、关卡列表回调）；WAV 经 --import 后 ResourceLoader 可加载；主场景 headless 冒烟无脚本错误。
+- 遗留：音效"可听到"与 UI 视觉验证属桌面/模拟器轮（T24），headless 无法覆盖，已记录。
