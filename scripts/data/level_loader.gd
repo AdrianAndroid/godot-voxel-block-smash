@@ -1,6 +1,18 @@
 extends RefCounted
 
-# 职责：关卡JSON入口，调用VoxelLoader/Data解析与Renderer批量生成，不维护第二份体素状态
+# 关卡 JSON 入口（架构 v6：调用 VoxelLoader/Data 解析与 Renderer 批量生成；不维护第二份体素状态）
 # 阶段：阶段2最小导入、阶段3完善
-# 任务：P1-INIT-v6 占位（architecture v6 目标树）
-# TODO: 仅占位保证可解析；不含 class_name/信号/业务方法，不挂载节点；基类在实现阶段按职责调整。
+
+var catalog := preload("res://scripts/level/level_catalog.gd")
+var loader := preload("res://scripts/data/voxel_loader.gd")
+
+
+# 返回 {ok, level_id, config, voxel_data, error}
+func load_level(config_path: String) -> Dictionary:
+	var c: Dictionary = catalog.load_config(config_path)
+	if not c.ok:
+		return {"ok": false, "error": c.error}
+	var v: Dictionary = loader.load_from_json(c.config.model_path)
+	if not v.ok:
+		return {"ok": false, "error": "模型加载失败: " + v.error}
+	return {"ok": true, "level_id": c.config.level_id, "config": c.config, "voxel_data": v.data, "error": ""}

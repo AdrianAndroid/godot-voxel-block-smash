@@ -1,12 +1,15 @@
 extends RefCounted
 
-# 单 MultiMesh 体素渲染（阶段2最小实现：整量构建；阶段3扩展尾交换删除映射）
-# 观测契约：实例数等于体素数；单 MultiMeshInstance3D；无逐块 Node；实例颜色=调色板纯色
+# 单 MultiMesh 体素渲染（阶段3完整版：整量构建 + 尾交换删除 + voxel_id↔slot 双向映射）
+# 观测契约：显示实例数等于存活数；交换删除后两向映射一致；无逐块 Node
+# 注意：MultiMesh 缓冲在 headless dummy 渲染器下不可回读，逻辑断言以 CPU 镜像为准
 
 var _mesh_instance: MultiMeshInstance3D
-# CPU 镜像：MultiMesh 缓冲在 headless dummy 渲染器下不可回读，逻辑与自测以镜像为准
-var mirror_transforms: Array = []
-var mirror_colors: Array = []
+var mirror_transforms: Array = []   # slot -> Transform3D
+var mirror_colors: Array = []       # slot -> Color
+var slot_of: Dictionary = {}        # voxel_id -> slot
+var voxel_of: Array = []            # slot -> voxel_id
+var _visible_count: int = 0
 
 
 func build(data: RefCounted) -> MultiMeshInstance3D:
@@ -23,6 +26,8 @@ func build(data: RefCounted) -> MultiMeshInstance3D:
 	mm.instance_count = data.count
 	mirror_transforms.clear()
 	mirror_colors.clear()
+	slot_of.clear()
+	voxel_of.clear()
 	for i in data.count:
 		var t := Transform3D(Basis.IDENTITY, data.grid_to_local(i))
 		var c: Color = data.palette[data.color_ids[i]]
@@ -30,13 +35,42 @@ func build(data: RefCounted) -> MultiMeshInstance3D:
 		mm.set_instance_color(i, c)
 		mirror_transforms.append(t)
 		mirror_colors.append(c)
+		slot_of[i] = i
+		voxel_of.append(i)
+	_visible_count = data.count
 	_mesh_instance = MultiMeshInstance3D.new()
 	_mesh_instance.name = "VoxelMultiMesh"
 	_mesh_instance.multimesh = mm
 	return _mesh_instance
 
 
+func remove_voxel(voxel_id: int) -> bool:
+	# 尾交换删除：把最后一个可见实例搬到被删 slot，收缩可见数
+	if not slot_of.has(voxel_id):
+		return false
+	var slot: int = slot_of[voxel_id]
+	var last := _visible_count - 1
+	var mm: MultiMesh = _mesh_instance.multimesh
+	if slot != last:
+		var last_id: int = voxel_of[last]
+		mirror_transforms[slot] = mirror_transforms[last]
+		mirror_colors[slot] = mirror_colors[last]
+		mm.set_instance_transform(slot, mirror_transforms[last])
+		mm.set_instance_color(slot, mirror_colors[last])
+		voxel_of[slot] = last_id
+		slot_of[last_id] = slot
+	mirror_transforms.resize(last)
+	mirror_colors.resize(last)
+	voxel_of.resize(last)
+	slot_of.erase(voxel_id)
+	_visible_count = last
+	mm.visible_instance_count = _visible_count
+	return true
+
+
 func instance_count() -> int:
-	if _mesh_instance == null or _mesh_instance.multimesh == null:
-		return 0
-	return _mesh_instance.multimesh.instance_count
+	return _visible_count
+
+
+func instance_of(voxel_id: int) -> int:
+	return slot_of.get(voxel_id, -1)

@@ -101,3 +101,15 @@
 【下发给Claude的任务】：P3-01～P3-05连续执行：体素管理器（存活集/空间索引/尾交换删除）、事件总线+EventRecorder、球体连续碰撞物理、输入互斥与手势路由、关卡数据接口。
 【风险记录】：GPU缓冲颜色回读在headless不可用，桌面/模拟器轮次需补验（已记test-report）；level_02夹具关卡未建（阶段4任务）；D项默认值未经用户确认（已按要求登记）；GitHub推送仍阻塞于gh登录。
 【下一步触发条件】：自动继续P3-01，无需等待。
+
+## 阶段3 核心底层框架（CLAUDE-ALL 自主执行，2026-10-26）
+- 范围：P3-01 体素管理（存活集/空间索引/单MultiMesh尾交换删除）→ P3-05 关卡配置/会话/存档。
+- 交付：voxel_state/voxel_spatial_index/voxel_renderer/voxel_manager；event_bus/event_recorder；collision_solver/projectile_system/ball_physics；input_mutex/gesture_router；level_catalog/level_session/level_repository；voxel_model.tscn/marble.tscn；game_controller.gd 骨架。
+- 自测（全部 headless 可复现）：
+  - tests/unit/test_voxel.gd 9/9 PASS（含重复删除拒绝、尾交换双向映射一致）
+  - tests/unit/test_event_bus.gd 8/8 PASS（顺序/去重/陈旧代拒绝/防重入/切关解绑/未知事件拒绝）
+  - tests/unit/test_input.gd 10/10 PASS（UI不旋转/0.01rad每px/首指/俯仰钳制/失焦清理）
+  - tests/integration/test_ball.gd 8/8 PASS（反射公式/大步长不穿透/出界一次/旋转模型命中与世界法线）
+  - tests/persistence/test_persistence.gd 12/12 PASS（配置契约/路径穿越拒绝/会话独立/存档往返/版本拒绝/损坏拒绝）
+- 修复记录：墙面命中期望修正（命中近侧膨胀面 x=1.35 而非远侧 -0.35）；两处 GDScript 类型推断报错改显式标注；game_controller 对齐实际 API（ball_physics.setup/set_level、session_generation、边界按 bbox 半径+8）。
+- 遗留：headless 为 dummy renderer，GPU 缓冲读回验证推迟到桌面/模拟器轮；事件总线退出泄漏告警为 SceneTree 脚本退出常态，不影响断言。
