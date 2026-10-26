@@ -148,3 +148,19 @@
 - headless 最终回归：9 套（event_bus/input/voxel/gameplay/presentation/persistence/import/ball/play）全部 exit=0，合计 145 行 PASS。
 - 测试报告：docs/test-report.md 终轮填写完成 — T01~T12/T14~T22/T24 PASS，T13 FAIL（性能环境受限），T23 部分执行。
 - 遗留：GitHub 推送阻塞于用户交互登录（gh auth login 需用户本人执行）；真机性能复测；T23 完整30轮。
+
+## 可玩性补齐设计交接（2026-10-26，Codex）
+- 按最新用户指令改为Codex只负责代码/架构设计、Claude负责实现。
+- 新增 docs/tasks/playability-gap-fix.md 与 docs/playability-architecture.md：球体渲染池、碎裂mesh/颜色、触摸释放、HUD闭环、有效色池、移动验收，以及跨局清理/旧存档generation/可解性等附加缺口。
+- 本轮短暂实现草稿已备份 /tmp/voxel-playability-reference 并撤回，运行时代码与导出配置恢复至本轮开始版本；其他来源的未跟踪证据文件保留。
+- 本轮未交付新APK、未执行实际通关及30局；仅设计就绪。Claude启动指令见架构文档第8节，尚未向其他任务发送消息或自动调度Claude。
+
+## 三张参考图补充审计（2026-10-26，Codex）
+- 对照b97cdf7确认球渲染装配、粒子mesh、HUD连击、触屏释放与拉伸仍待实现。
+- 在 docs/playability-architecture.md 第9节补充拖尾、多球可读性、炮台/槽状态、连击显示策略、分区布局、材质与道具待生效反馈设计。
+- 区分截图可见现象与无法证明的玩法；保留3×3、四色青蛙及独立点击发射，不引入广告、问号炮台或新模型。仅文档变更，未执行游戏代码或打包。
+
+
+## 入槽自动连发规则澄清（2026-10-26，Codex）
+- 用户明确炮台在炮位即连续发射，弹数0消失。更新G02/T04及可玩性任务/架构第10节，替代历史点击逐发。
+- 设计稳定turret_id调度、成功才扣弹、多个炮位独立冷却、生命周期停止、下一发道具确定性消费；发射间隔0.25秒仅为执行建议。仅文档变更，待Claude实现。
