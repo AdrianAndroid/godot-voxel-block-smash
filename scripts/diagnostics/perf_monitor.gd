@@ -1,4 +1,5 @@
 extends Node
+const PerfProbe := preload("res://scripts/diagnostics/perf_probe.gd")
 
 ## D07 性能采样：帧时间窗口统计（avg/p95/FPS）+ 内存，周期写 user://perf_log.jsonl。
 ## 只读测量，不影响玩法。
@@ -42,6 +43,7 @@ func _flush() -> void:
 		"avg_ms": avg * 1000.0,
 		"p95_ms": p95 * 1000.0,
 		"mem_static_mb": OS.get_static_memory_usage() / 1048576.0,
+		"probe": PerfProbe.snapshot_and_reset(),
 	}
 	_file.store_line(JSON.stringify(row))
 	_file.flush()

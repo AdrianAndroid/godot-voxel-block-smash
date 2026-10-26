@@ -17,6 +17,11 @@ func _initialize() -> void:
 		_check(r300.data.count == 300, "model_300 存活数=300", "实际 %d" % r300.data.count)
 	var r1200: Dictionary = loader.load_from_json("res://tests/fixtures/model_1200.json")
 	_check(r1200.ok and r1200.data.count == 1200, "model_1200 存活数=1200", str(r1200))
+	# CQ-20261026/S01：新上限 6000 边界合法、6001 拒绝
+	var r6000: Dictionary = loader.load_from_json("res://tests/fixtures/model_6000.json")
+	_check(r6000.ok and r6000.data.count == 6000, "model_6000 存活数=6000（新上限边界）", str(r6000))
+	var r6001: Dictionary = loader.load_from_json("res://tests/fixtures/bad_count_high.json")
+	_check(not r6001.ok and "数量" in r6001.error, "6001 块越界拒绝", str(r6001))
 
 	# 非法模型拒绝且定位字段
 	var r_dup: Dictionary = loader.load_from_json("res://tests/fixtures/bad_dup.json")
@@ -29,9 +34,22 @@ func _initialize() -> void:
 	var r_schema: Dictionary = loader.load_from_json("res://tests/fixtures/bad_schema.json")
 	_check(not r_schema.ok and "schema_version" in r_schema.error, "非法schema拒绝: " + str(r_schema.error), "")
 
-	# 正式青蛙模型
+	# 正式青蛙模型（frog_01 保留作回归资源；frog_02 为 CQ-20261026 正式模型）
 	var r_frog: Dictionary = loader.load_from_json("res://assets/models/json/frog_01.json")
 	_check(r_frog.ok and r_frog.data.count == 367, "frog_01 存活数=367", str(r_frog))
+	var r_frog2: Dictionary = loader.load_from_json("res://assets/models/json/frog_02.json")
+	_check(r_frog2.ok and r_frog2.data.count == 4105, "frog_02 存活数=4105（4000~5000）", str(r_frog2))
+	if r_frog2.ok:
+		# CQ-T02：每色统计 = 生成器导出统计
+		var counts := {}
+		for i in r_frog2.data.count:
+			var cid: int = r_frog2.data.color_ids[i]
+			counts[cid] = int(counts.get(cid, 0)) + 1
+		var want := {1: 3167, 4: 311, 6: 218, 7: 30, 8: 299, 9: 80}
+		var c_ok := counts == want
+		_check(c_ok, "frog_02 每色统计一致", str(counts))
+		for cid in counts.keys():
+			_check(r_frog2.data.palette.has(cid), "frog_02 颜色 %d 在 palette" % cid, "")
 
 	# 渲染：单 MultiMesh、实例数=存活数、颜色一致、无逐块节点
 	if r_frog.ok:

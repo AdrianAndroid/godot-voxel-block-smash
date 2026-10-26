@@ -37,3 +37,12 @@
 | assets/audio/sfx/merge.wav | 合成 | gen_sfx.py 双音660+990Hz/0.15s | 同上 |
 | assets/audio/sfx/win.wav | 通关 | gen_sfx.py 琶音523/659/784Hz | 同上 |
 | assets/audio/sfx/lose.wav | 失败 | gen_sfx.py 扫频440→220Hz/0.6s | 同上 |
+| assets/vox_source/frog_02.vox → assets/models/json/frog_02.json | 程序化自制（tools/voxel_export/gen_frog02_vox.py，参数化椭球组合：身体/加厚头部/眼白+瞳孔/黄腹/浅绿背脊/四肢+橙脚趾/橙嘴线） | Claude Code（执行方） | 自制无许可负担 | 2026-10-26 | CQ-20261026/S01 初版 | 4105（绿3167/黄311/浅绿299/白218/橙80/深灰30） | 9色 palette（实际用6色） | 同上（纯程序生成，无 Goxel CLI） | 同 frog_01 映射；唯一坐标校验通过 | schema_version=2，sha256=f867f19c33c4… | PASS（test_import 新断言：4105/每色一致/6000边界/6001拒绝） |
+
+## 炮台贴图（CQ-20261026/S06，程序化自制 CC0）
+| 文件 | 用途 | 来源 | 作者 | 许可 | 取得日期 | 校验结果 |
+|---|---|---|---|---|---|---|
+| assets/cannons/cannon_base.png | 炮台底座（256² RGBA） | tools/cannon_gen.py（PIL 程序生成：圆角矩形+铆钉） | Claude Code（执行方） | 自制 CC0，无许可负担 | 2026-10-26 | PASS（bbox 校验+目视） |
+| assets/cannons/cannon_body.png | 炮身（白色供 palette 染色，圆心(128,150) r=86） | 同上 | 同上 | 同上 | 2026-10-26 | PASS |
+| assets/cannons/cannon_barrel.png | 炮管（枢轴(128,150) 朝上，深色炮口环，枢轴→炮口124px） | 同上 | 同上 | 同上 | 2026-10-26 | PASS |
+| assets/cannons/cannon_flash.png | 炮口闪光（64² 径向星形 (255,244,200)） | 同上 | 同上 | 同上 | 2026-10-26 | PASS |

@@ -1,0 +1,7 @@
+## 环境基线 (2026-10-26 11:45 CST)
+- Godot: 4.7.2.stable.official.ed1daf0bf
+- 设备: Pixel 7a / Android 17 (API 37) / arm64-v8a
+- 分辨率: Physical size: 1080x2400
+- 已装包:     versionCode=2 minSdk=24 targetSdk=36
+    versionName=0.2.0
+- git HEAD: 9c0025b77cb2d9a74505ad0c802b0aef7f13edc9 (dirty)

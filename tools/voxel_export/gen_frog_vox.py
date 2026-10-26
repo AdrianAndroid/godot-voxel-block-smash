@@ -14,6 +14,8 @@ PALETTE = {  # color_id -> (r, g, b) 0-255，与 GDD 执行默认值 D05 一致
 	5: (0x9C, 0x27, 0xB0),  # 紫
 	6: (0xFA, 0xFA, 0xFA),  # 白
 	7: (0x21, 0x21, 0x21),  # 深灰
+	8: (0x8B, 0xC3, 0x4A),  # 浅绿（CQ-20261026 frog_02 新增）
+	9: (0xFF, 0x98, 0x00),  # 橙（CQ-20261026 frog_02 新增）
 }
 GREEN, RED, BLUE, YELLOW, WHITE, DARK = 1, 2, 3, 4, 6, 7
 

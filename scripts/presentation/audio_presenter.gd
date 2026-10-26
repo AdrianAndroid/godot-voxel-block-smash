@@ -44,6 +44,12 @@ func _on_event(_args: Array, meta: Dictionary) -> void:
 		play(sfx)
 
 
+# 【新增代码】离开/重开时停止所有旧声音（§2 表 AudioPresenter.stop_all）
+func stop_all() -> void:
+	for player in _players:
+		player.stop()
+
+
 func play(sfx: String) -> bool:
 	play_counts[sfx] = int(play_counts.get(sfx, 0)) + 1
 	if muted or not _streams.has(sfx):

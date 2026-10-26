@@ -27,7 +27,7 @@ func _initialize() -> void:
 	var data := {"count": wall.size()}
 	var cells := {}
 	for id in wall:
-		cells[Vector3i(wall[id])] = id
+		cells[index_script.pack_v(Vector3i(wall[id]))] = id  # CQ/S10：索引键为打包 int
 	idx._cell = cells
 
 	var candidates_of := func(p0: Vector3, p1: Vector3, r: float) -> Array:

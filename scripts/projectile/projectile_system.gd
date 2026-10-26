@@ -1,5 +1,7 @@
 extends RefCounted
 
+const PerfProbe := preload("res://scripts/diagnostics/perf_probe.gd")
+
 # 弹珠推进系统（架构 v6：固定物理步、最早命中推进剩余时间、防穿透、出界只结束一次）
 # 阶段：阶段3物理，阶段4业务接入
 # 坐标：球存储世界坐标；每物理步经 world_from_grid 变换到模型局部格空间扫掠（旋转模型逐步处理）
@@ -27,11 +29,14 @@ func _init() -> void:
 	solver = preload("res://scripts/projectile/collision_solver.gd")
 
 
-func spawn(pos: Vector3, vel: Vector3, shot_id: int, color_id: int = 0, any_color: bool = false) -> int:
+# CQ-20261026/S05：stop_on_hit=true 时首个命中即停球（一发消一块即回收，不再反弹续消）
+# CQ/S08：异色万能弹路径已移除（§2.4），不再接受 any_color
+func spawn(pos: Vector3, vel: Vector3, shot_id: int, color_id: int = 0,
+		stop_on_hit: bool = false) -> int:
 	var id := _next_ball_id
 	_next_ball_id += 1
 	_balls[id] = {"pos": pos, "vel": vel, "active": true, "shot_id": shot_id, "bounces": 0,
-		"color_id": color_id, "any_color": any_color}
+		"color_id": color_id, "stop_on_hit": stop_on_hit}
 	return id
 
 
@@ -40,7 +45,7 @@ func ball_snapshot(ball_id: int) -> Dictionary:
 	if b.is_empty():
 		return {}
 	return {"ball_id": ball_id, "shot_id": b.shot_id, "pos": b.pos, "vel": b.vel,
-		"active": b.active, "color_id": b.get("color_id", 0), "any_color": b.get("any_color", false)}
+		"active": b.active, "color_id": b.get("color_id", 0)}
 
 
 func active_count() -> int:
@@ -65,6 +70,11 @@ func ball_velocity(ball_id: int) -> Vector3:
 func step(dt: float, world_from_grid: Transform3D, candidates_of: Callable, grid_pos_of: Callable) -> StepResult:
 	var result := StepResult.new()
 	var grid_from_world := world_from_grid.affine_inverse()
+	var _nactive := 0
+	for id in _balls.keys():
+		if _balls[id].active:
+			_nactive += 1
+	PerfProbe.count("pstep_active_%d" % mini(_nactive, 20))
 	for id in _balls.keys():
 		var b: Dictionary = _balls[id]
 		if not b.active:
@@ -77,8 +87,13 @@ func step(dt: float, world_from_grid: Transform3D, candidates_of: Callable, grid
 		while remaining > 1e-9 and iter < MAX_ITERATIONS and b.active:
 			iter += 1
 			var p1: Vector3 = pl + vl * remaining
+			var _tc := PerfProbe.t0()
 			var cands: Array = candidates_of.call(pl, p1, radius)
+			PerfProbe.add("pstep_cands", _tc)
+			PerfProbe.count("pstep_cands_n_%d" % mini(cands.size(), 200))
+			var _ts := PerfProbe.t0()
 			var hit: Dictionary = solver.sweep(pl, p1, radius, cands, grid_pos_of)
+			PerfProbe.add("pstep_sweep", _ts)
 			if hit.hit:
 				pl = hit.point + hit.normal * EPSILON
 				var v_before_l: Vector3 = vl
@@ -92,7 +107,11 @@ func step(dt: float, world_from_grid: Transform3D, candidates_of: Callable, grid
 					"vel_after": world_from_grid.basis * vl,
 				})
 				remaining *= (1.0 - hit.t)
-				if b.bounces >= max_bounces:
+				if b.get("stop_on_hit", false):
+					# CQ §2.2：一发一块——首个接触即停球，由控制器按票据结算（命中/取消）
+					b.active = false
+					result.ended.append({"ball_id": id, "reason": "hit_stop", "pos": world_from_grid * pl})
+				elif b.bounces >= max_bounces:
 					b.active = false
 					result.ended.append({"ball_id": id, "reason": "max_bounces", "pos": world_from_grid * pl})
 					result.diagnostics.append({"ball_id": id, "reason": "max_bounces_escape"})

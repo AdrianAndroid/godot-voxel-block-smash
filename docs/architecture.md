@@ -210,6 +210,30 @@ T23采用固定种子重复操作、预热后内存趋势和节点/球/粒子回
 
 事件不是任意异步修改状态的许可。物理步中控制器按命中→状态提交→连击/终局提交的明确顺序处理；渲染与音效只观察。总线串行派发并防重入，派生事件排序记录sequence；监听方不得再次发布同一事件形成环。切关解绑旧订阅，旧generation消息拒绝；测试验证重复、乱序、出界清零、切关和订阅计数。通知清单扩展须先更新本契约和对应测试，不让执行Agent自行改名。
 
+## CQ-20261026 架构增量（2026-10-26，本轮变更以 docs/tasks/cannon-queue-redesign.md 为入口）
+
+### 新增/改造模块
+- cannon_queue_service（替代 pool_service 的九格职责）：五列可变长队列、按 V0[c] 守恒生成、列首出队/补位、随机排（仅重排）、合成（列首同色、上限160）、取回（原列队首、保留弹数）。
+- slot_service：固定 5 项数组（null=空位），所有权原子转移，不压缩、不横移。
+- target_selector（新增）：按 color_id 表面候选缓存 + 真实球半径扫掠验证可达性；输出 voxel_id/世界目标点/方向/失败原因；删除后仅更新邻域。
+- shot_ledger（新增）：目标预订（reservations: voxel_id→shot_id）、在途票据（ShotTicket）、命中/取消幂等结算、每色 Q/S/F/V/D 守恒审计。
+- auto_fire_scheduler：保留稳定 ID 调度；新增发射前提=选靶成功；WAITING_TARGET 为正常等待态。
+- projectile_system/ball_physics：命中预订同色目标后停球通知结算；不再持续反弹多消。
+- cannon_view（新增）：队列与炮位共用的炮台造型视图（炮管/炮身/底座/弹数）。
+
+### 状态契约
+session.queue_columns: Array[5]（列首索引0）；session.turrets: Dictionary[turret_id→CannonState]；session.slots: Array[5]（turret_id 或 null）。CannonState: id/color_id/ammo_remaining/origin_column/state(QUEUED/LOADING/READY/WAITING_TARGET/FIRING/RETURN_PENDING/DRAINING)/has_fired。ShotTicket: shot_id/turret_id/target_voxel_id/color_id/session_generation/status(PENDING/HIT/CANCELLED)/speed_modifier。每门炮只存在于一个容器；视图不是所有权来源。
+
+### 事件白名单新增（接入前先登记本契约）
+queue_changed(column_id, queue_snapshot, meta)：列内容变化（出队/补位/重排/取回）后由队列服务发布。
+slots_changed(slot_index, turret_id_or_null, meta)：固定槽占用变化后由槽服务发布。
+turret_state_changed(turret_id, state, meta)：CannonState 状态迁移后发布（含 WAITING_TARGET）。
+shot_resolved(ticket, meta)：票据结算（HIT/CANCELLED）后由 shot_ledger 发布，幂等。
+守恒不变量：Q[c]+S[c]+F[c]=V[c]，V[c]+D[c]=V0[c]；开发测试模式每次事务后断言。
+
+### 存档
+快照版本 v2：model_revision/hash、queue_columns、slots、turrets 字典、seed/RNG 状态、活体素、道具、规则版本；保存前在主线程暂停调度并将 PENDING 票据取消返还；v1 旧档备份+提示重开，不静默迁移。
+
 ## 关卡配置JSON契约（阶段2最小版本）
 
 assets/levels/level_01.json为对象，必填schema_version（整数1，关卡配置版本，与模型schema_version=2独立）、level_id（非空字符串，第一关level_01）、display_number（正整数1）、model_path（res://assets/models/json/frog_01.json）、model_revision（非空版本字符串）、rules（对象）。阶段2rules允许空对象，仅进行导入验证；阶段4必须按GDD执行默认值决策填入正式玩法所需规则，空rules不得启动完整游戏。未知字段拒绝并报字段路径；schema不支持、必填缺失、类型错误、模型不存在或模型校验失败时整关加载失败，不部分修改当前会话、不发布level_loaded。model_path限制在res://assets/models/json/且禁止路径穿越。model_revision变更必须使旧快照重新校验，禁止静默套用。Claude在阶段4把rules各字段、类型、约束和默认值明确落文档后实现，不将阶段2空对象隐式解释为正式默认玩法。

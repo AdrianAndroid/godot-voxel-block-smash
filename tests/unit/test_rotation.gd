@@ -1,0 +1,126 @@
+extends SceneTree
+
+# CQ-20261026/S02 + CQ-T01：跟手旋转标记法自测（桌面投影证据，真机复核在 S11）。
+# 瞳孔（深灰 color_id=7）为前表面标记：向右拖→标记屏幕 x 增大；向下拖→屏幕 y 增大；
+# 默认视角与偏航 90° 后分别验证（90° 后取当前朝向相机的面重新选标记）。
+# 运行：godot --headless --path . -s tests/unit/test_rotation.gd
+
+var _failures := 0
+
+
+func _initialize() -> void:
+	call_deferred("_run")
+
+
+func _run() -> void:
+	var main: Node = preload("res://scenes/main/main.tscn").instantiate()
+	root.add_child(main)
+	main.enter_level("level_01", {})
+
+	# 默认视角：向右拖 → 瞳孔标记右移
+	var before := _pupil_screen_centroid(main)
+	_drag(main, Vector2(300, 0))
+	var after := _pupil_screen_centroid(main)
+	_check(after.x > before.x + 5.0, "默认视角右拖→瞳孔右移", "%.1f→%.1f" % [before.x, after.x])
+
+	# 默认视角：向下拖 → 瞳孔下移（重新进关复位姿态）
+	main.enter_level("level_01", {})
+	before = _pupil_screen_centroid(main)
+	_drag(main, Vector2(0, 300))
+	after = _pupil_screen_centroid(main)
+	_check(after.y > before.y + 5.0, "默认视角下拖→瞳孔下移", "%.1f→%.1f" % [before.y, after.y])
+
+	# 偏航 90° 后：选当前最朝向相机的固定体素作标记，右拖仍右移、下拖仍下移
+	main.enter_level("level_01", {})
+	_drag(main, Vector2(540, 0))  # ≈90°（灵敏度 PI/宽）
+	var marker := _front_voxel_id(main)
+	before = _voxel_screen_pos(main, marker)
+	_drag(main, Vector2(200, 0))
+	after = _voxel_screen_pos(main, marker)
+	_check(after.x > before.x + 3.0, "偏航90°后右拖→前面标记右移", "%.1f→%.1f" % [before.x, after.x])
+	before = _voxel_screen_pos(main, marker)
+	_drag(main, Vector2(0, 200))
+	after = _voxel_screen_pos(main, marker)
+	_check(after.y > before.y + 3.0, "偏航90°后下拖→前面标记下移", "%.1f→%.1f" % [before.y, after.y])
+
+	# 俯仰边界：连续大幅下 drag 不超过 70° 且模型中心不漂移
+	main.enter_level("level_01", {})
+	var center0: Vector3 = main.controller.voxel_model.global_transform.origin
+	for i in 20:
+		_drag(main, Vector2(0, 400))
+	var basis: Basis = main.controller.voxel_model.global_transform.basis
+	var tilt: float = asin(clampf((basis * Vector3(0, 0, -1)).normalized().dot(Vector3.UP), -1.0, 1.0))
+	_check(absf(tilt) <= 1.2218, "俯仰钳制 ±70°", "tilt=%.3f" % tilt)
+	_check(center0.is_equal_approx(main.controller.voxel_model.global_transform.origin), "旋转中心不漂移", "")
+
+	# 灵敏度：横扫展示区宽度 ≈180°
+	main.enter_level("level_01", {})
+	var w: float = root.get_visible_rect().size.x
+	_drag(main, Vector2(w, 0))
+	var front: Vector3 = (main.controller.voxel_model.global_transform.basis * Vector3(0, 0, -1)).normalized()
+	_check(front.dot(Vector3(0, 0, 1)) < -0.99, "横扫全宽≈180°（前面转离相机）", str(front))
+
+	main.queue_free()
+	if _failures == 0:
+		print("TEST_PASS test_rotation")
+	else:
+		print("TEST_FAIL test_rotation failures=%d" % _failures)
+	quit(0 if _failures == 0 else 1)
+
+
+func _drag(main: Node, delta: Vector2) -> void:
+	main.router.handle_press(0, false)
+	var rot: Vector2 = main.router.handle_drag(0, delta)
+	main._apply_rotation(rot)
+	main.router.handle_release(0)
+
+
+# 瞳孔（color_id=7）世界坐标屏幕投影质心
+func _pupil_screen_centroid(main: Node) -> Vector2:
+	return _centroid_of_color(main, 7)
+
+
+func _centroid_of_color(main: Node, color_id: int) -> Vector2:
+	var vm: Node3D = main.controller.voxel_model
+	var data: RefCounted = vm.voxel_data
+	var cam: Camera3D = main.camera
+	var sum := Vector2.ZERO
+	var n := 0
+	for i in data.count:
+		if data.color_ids[i] != color_id:
+			continue
+		var w: Vector3 = vm.world_from_grid() * (data.positions[i] + Vector3(0.5, 0.5, 0.5))
+		if cam.is_position_behind(w):
+			continue
+		sum += cam.unproject_position(w)
+		n += 1
+	return sum / maxi(n, 1)
+
+
+# 当前最朝向相机的体素 id（世界 z 最大）
+func _front_voxel_id(main: Node) -> int:
+	var vm: Node3D = main.controller.voxel_model
+	var data: RefCounted = vm.voxel_data
+	var best := -1
+	var best_z := -INF
+	for i in data.count:
+		var w: Vector3 = vm.world_from_grid() * (data.positions[i] + Vector3(0.5, 0.5, 0.5))
+		if w.z > best_z:
+			best_z = w.z
+			best = i
+	return best
+
+
+func _voxel_screen_pos(main: Node, voxel_id: int) -> Vector2:
+	var vm: Node3D = main.controller.voxel_model
+	var data: RefCounted = vm.voxel_data
+	var w: Vector3 = vm.world_from_grid() * (data.positions[voxel_id] + Vector3(0.5, 0.5, 0.5))
+	return main.camera.unproject_position(w)
+
+
+func _check(cond: bool, name: String, detail: String) -> void:
+	if cond:
+		print("  PASS: " + name)
+	else:
+		_failures += 1
+		print("  FAIL: " + name + " " + detail)

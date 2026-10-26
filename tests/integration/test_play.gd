@@ -1,12 +1,13 @@
 extends SceneTree
 
-# P4-03/05/06/07/08/09 玩法集成自测：发射事务/同色消除/连击/道具生效/胜负/关卡切换
+# CQ-20261026 玩法集成自测：一键上位→自动补位→同色自动射击→真实命中消块→全部清零→胜利。
+# 全程只通过控制器正常操作（place_front/return_turret/use_prop），不直接删块、不改胜负。
+# 另含：失败真值表/通关后操作拒绝/关卡切换 v2 快照/陈旧事件拒绝。
 # 运行：godot --headless --path . -s tests/integration/test_play.gd
 
 var _failures := 0
 var _events: Array = []  # [{event, args}]
-var _probe_ball := -1
-var _probe_gc: Node = null
+var _cur_dir := Vector3(0, -1, 0)  # 当前发射原点方向（格空间，绕模型循环）
 
 const GameControllerScript := preload("res://scripts/app/game_controller.gd")
 
@@ -15,125 +16,122 @@ func _initialize() -> void:
 	call_deferred("_run")
 
 
+# 出界盒内部、贴盒面的发射原点（与真机"射线∩边界AABB内移"契约等价的测试替身）。
+# 注意：弹球物理在格空间扫掠，旋转模型世界变换不改变格空间几何——
+# 真机上是"相机/炮口固定、模型旋转"使格空间原点移动；测试替身等价地直接移动格空间原点。
+func _aim_for(gc: Node) -> Callable:
+	return func(_slot_index: int) -> Dictionary:
+		var origin_grid := _origin_grid(gc)
+		var world: Vector3 = gc.voxel_model.world_from_grid() * origin_grid
+		return {"ok": true, "origin": world, "origin_grid": origin_grid}
+
+
+func _origin_grid(gc: Node) -> Vector3:
+	var sys: RefCounted = gc.ball_physics.system
+	return sys.boundary_center + _cur_dir * (sys.boundary_half - 0.5)
+
+
 func _run() -> void:
+	# ========== 完整通关：grid_300 夹具（300 块，五色各 60） ==========
 	var gc: Node = GameControllerScript.new()
 	root.add_child(gc)
-	var r: Dictionary = gc.start_level("res://assets/levels/level_01.json")
-	_check(r.ok, "关卡启动", str(r))
-	_check(gc.session.pool.size() == 9 and gc.session.unlocked_slots == 3, "池9格/初始3槽", "")
+	var r: Dictionary = gc.start_level("res://tests/fixtures/level_02.json")
+	_check(r.ok, "夹具关卡启动", str(r))
+	_check(gc.voxel_manager.alive_count() == 300, "存活 300 块", "")
+	var total_ammo := 0
+	for tid in gc.session.turrets:
+		total_ammo += int(gc.session.turrets[tid].ammo_remaining)
+	_check(total_ammo == 300, "开局弹药总数=300（逐色守恒）", "%d" % total_ammo)
 	for e in gc.bus.EVENTS:
 		gc.bus.subscribe(e, func(args: Array, meta: Dictionary) -> void:
-			_events.append({"event": e, "args": args, "seq": meta.get("sequence", 0)}), "level_01")
+			_events.append({"event": e, "args": args, "seq": meta.get("sequence", 0)}), "level_02")
+	var won := {"n": 0}
+	gc.bus.subscribe("level_win", func(_a: Array, _m: Dictionary) -> void: won.n += 1, "level_02")
+	gc.origin_resolver = _aim_for(gc)
 
-	# --- 安放与发射事务（G02/G05） ---
-	_check(not gc.place_turret(9).ok, "越界池格安放拒绝", "")
-	_check(gc.place_turret(0).ok, "安放池0→槽", "")
-	_check(gc.session.pool[0].is_empty() and gc.session.slots.size() == 1, "安放后归属唯一", "")
-	gc.session.slots[0].ammo_count = 2
-	gc.session.slots[0].color_id = gc.voxel_manager.color_of(_first_alive(gc))  # 保证同色命中
-	var aim := _aim_at_voxel(gc, _first_alive(gc))
-	var f1: Dictionary = gc.fire(0, aim.origin, aim.dir)
-	_check(f1.ok and f1.ammo_left == 1, "首次发射扣弹 2→1", str(f1))
-	var b1: Dictionary = gc.ball_physics.system.ball_snapshot(f1.ball_id)
-	_check(is_equal_approx(b1.vel.length(), 12.0), "基础速度模长=12", str(b1.vel))
-	var f2: Dictionary = gc.fire(0, aim.origin, aim.dir)
-	_check(f2.ok and f2.ammo_left == 0 and gc.session.slots.is_empty(), "归零炮台移除", str(f2))
-	_check(gc.ball_physics.system.active_count() == 2, "已发射球不受炮台移除影响", "")
-	_check(not gc.fire(0, aim.origin, aim.dir).ok, "空槽不发射", "")
+	# 贪心驾驶（模拟玩家正常操作）：有空槽就上"有可达同色目标"的列首；
+	# 列首都不可达时取回一个等待中的炮台换列（CQ 允许的正常操作）。
+	var max_streak := 0
+	var last_alive := 300
+	var since_progress := 0
+	var steps := 0
+	var orient_idx := 0
+	while gc.session.outcome == "RUNNING" and steps < 120000:
+		steps += 1
+		gc.step(1.0 / 60.0)
+		# 连击观察
+		for e in _events:
+			if e.event == "combo_update":
+				max_streak = maxi(max_streak, int(e.args[0]))
+		_events.clear()
+		# 驾驶：每隔几步尝试补位
+		if steps % 5 == 0:
+			_drive(gc)
+		var alive: int = gc.voxel_manager.alive_count()
+		if alive < last_alive:
+			last_alive = alive
+			since_progress = 0
+			if alive % 50 == 0 or alive < 20:
+				print("  [play] alive=%d steps=%d orient=%d" % [alive, steps, orient_idx])
+		else:
+			since_progress += 1
+			if since_progress >= 900:  # 15 秒无进展 → 换朝向（模拟玩家拖拽旋转）
+				since_progress = 0
+				orient_idx += 1
+				_apply_orientation(gc, orient_idx)
+	_check(gc.session.outcome == "WON" and won.n == 1, "正常操作完整通关（事件一次）",
+		"outcome=%s alive=%d steps=%d" % [gc.session.outcome, gc.voxel_manager.alive_count(), steps])
+	_check(gc.voxel_manager.alive_count() == 0, "全部清零", "")
+	var audit: Dictionary = gc.conservation_audit()
+	_check(audit.ok, "终局守恒：Q+S+F=V=0 逐色成立", str(audit))
+	_check(max_streak >= 2, "全局连击出现 x2+", "max=%d" % max_streak)
+	_check(not gc.place_front(0).ok and not gc.use_prop("speed_x2").ok, "通关后操作拒绝", "")
 
-	# --- 同色消除 + 连击（G04/G07） ---
-	var alive_before: int = gc.voxel_manager.alive_count()
-	_step_until(gc, func() -> bool: return _has_event("voxel_destroyed"), 600)
-	_check(_has_event("voxel_destroyed"), "同色命中删除（颜色来自炮台=命中块）", "")
-	_check(gc.voxel_manager.alive_count() < alive_before, "存活数下降", "%d→%d" % [alive_before, gc.voxel_manager.alive_count()])
-	_check(_has_event("combo_update"), "删除产生连击事件", "")
-
-	# --- 异色反弹不删除（G04） ---
-	var mism := _aim_at_voxel(gc, _find_voxel_of_color(gc, _other_color(gc)))
-	_probe_ball = gc.ball_physics.spawn_ball(mism.origin, mism.dir * 12.0, 900, _other_color(gc), false)
-	_probe_gc = gc
-	var alive2: int = gc.voxel_manager.alive_count()
-	_step_until(gc, _probe_bounced_or_dead, 1200)
-	_check(gc.voxel_manager.alive_count() == alive2, "异色命中不删除", "%d→%d" % [alive2, gc.voxel_manager.alive_count()])
-
-	# --- 出界清零连击（G07） ---
-	_probe_ball = gc.ball_physics.spawn_ball(Vector3(0, -50, 0), Vector3(0, -12, 0), 901, 1, false)
-	_probe_gc = gc
-	_step_until(gc, func() -> bool: return _has_event("ball_out_of_bounds"), 600)
-	_check(not gc.ball_physics.system.ball_snapshot(_probe_ball).get("active", true), "出界球结束", "")
-	_check(_count_event("ball_out_of_bounds") >= 1, "出界事件提交", "")
-
-	# --- 道具生效（G08/G10） ---
-	gc.place_turret(1)
-	gc.session.slots[0].ammo_count = 5
-	gc.use_prop("speed_x2")
-	var target := _aim_at_voxel(gc, _first_alive(gc))
-	var fs: Dictionary = gc.fire(0, target.origin, target.dir)
-	var bs: Dictionary = gc.ball_physics.system.ball_snapshot(fs.ball_id)
-	_check(is_equal_approx(bs.vel.length(), 24.0), "速度×2下一发=24", str(bs.vel))
-	_check(not gc.session.pending_effects.speed_x2, "速度×2用后清除", "")
-	var fs2: Dictionary = gc.fire(0, target.origin, target.dir)
-	_check(is_equal_approx(gc.ball_physics.system.ball_snapshot(fs2.ball_id).vel.length(), 12.0),
-		"后续发射恢复12", "")
-
-	# 任意指：异色炮台消除异色块
-	gc.use_prop("any_color")
-	var vid := _first_alive(gc)
-	var vc: int = gc.voxel_manager.color_of(vid)
-	gc.session.slots[0].color_id = _other_color_of(gc, vc)
-	var aim2 := _aim_at_voxel(gc, vid)
-	var fa: Dictionary = gc.fire(0, aim2.origin, aim2.dir)
-	_step_until(gc, func() -> bool: return not gc.voxel_manager.is_alive(vid), 600)
-	_check(not gc.voxel_manager.is_alive(vid), "任意指弹珠消除异色块", "")
-	_check(not gc.session.pending_effects.any_color, "任意指发射后清除", "")
-
-	# --- 胜负（G12/G14 + D08） ---
-	# 失败真值表：余块>0、池空、槽空、无活跃球、随机排=0
+	# ========== 死局真值表（CQ/S08 §6）：队列+槽全空、余块>0、无在途 → 完整性错误，不包装成正常失败 ==========
 	var gc2: Node = GameControllerScript.new()
 	root.add_child(gc2)
-	gc2.start_level("res://assets/levels/level_01.json")
-	var lost := {"n": 0}
-	gc2.bus.subscribe("level_lose", func(a: Array, m: Dictionary) -> void: lost.n += 1, "level_01")
-	for i in 9:
-		gc2.session.pool[i] = {}
-	gc2.session.slots.clear()
-	gc2.session.prop_counts.shuffle = 0
+	gc2.start_level("res://tests/fixtures/level_02.json")
+	var ierrs := {"n": 0}
+	gc2.bus.subscribe("integrity_error", func(_a: Array, _m: Dictionary) -> void: ierrs.n += 1, "level_02")
+	gc2.session.queue_columns = [[], [], [], [], []]
+	gc2.session.turrets.clear()
+	for i in 5:
+		gc2.session.slots[i] = -1
 	gc2.step(0.016)
-	_check(gc2.session.outcome == "LOST" and lost.n == 1, "失败真值表触发且只发一次", "n=%d" % lost.n)
+	_check(gc2.session.outcome == "ERROR" and ierrs.n == 1, "死局记完整性错误且只发一次", "n=%d" % ierrs.n)
 	gc2.step(0.016)
-	_check(lost.n == 1, "失败不重复发布", "n=%d" % lost.n)
+	_check(ierrs.n == 1, "完整性错误不重复发布", "n=%d" % ierrs.n)
 
-	# 通关：清空所有块 → 一次 level_win；通关后操作拒绝
-	var gc3: Node = GameControllerScript.new()
-	root.add_child(gc3)
-	gc3.start_level("res://assets/levels/level_01.json")
-	var won := {"n": 0}
-	gc3.bus.subscribe("level_win", func(a: Array, m: Dictionary) -> void: won.n += 1, "level_01")
-	for id in gc3.voxel_manager.state.alive_ids():
-		gc3.voxel_manager.destroy(id)
-	gc3.step(0.016)
-	gc3.step(0.016)
-	_check(gc3.session.outcome == "WON" and won.n == 1, "全清通关且只发一次", "n=%d" % won.n)
-	_check(not gc3.place_turret(0).ok and not gc3.use_prop("speed_x2").ok, "通关后操作拒绝", "")
-
-	# --- 关卡切换 A→B→A（G15） ---
+	# ========== 关卡切换 A→B→A（G15，v2 快照） ==========
 	var ga: Node = GameControllerScript.new()
 	root.add_child(ga)
 	ga.start_level("res://assets/levels/level_01.json")
-	ga.place_turret(0)
+	var col_a := -1
+	for c in 5:
+		if not ga.session.queue_columns[c].is_empty():
+			col_a = c
+			break
+	ga.place_front(col_a)
 	var snap_a: Dictionary = ga.session.to_snapshot()
 	var gb: Node = GameControllerScript.new()
 	root.add_child(gb)
 	var rb: Dictionary = gb.start_level("res://tests/fixtures/level_02.json")
 	_check(rb.ok and gb.session.level_id == "level_02" and gb.voxel_manager.alive_count() == 300,
 		"进入B（测试夹具）", str(rb))
-	gb.place_turret(0)
-	_check(snap_a.pool[1].get("turret_id", -1) != -1, "B 操作不改 A 快照", "")
+	gb.place_front(0)
+	# B 的操作不影响 A 的快照
+	var snap_tid := -1
+	for i in 5:
+		if int(snap_a.slots[i]) >= 0:
+			snap_tid = int(snap_a.slots[i])
+	_check(snap_tid >= 0 and snap_a.turrets.has(snap_tid)
+		and int((snap_a.turrets[snap_tid] as Dictionary).ammo_remaining) > 0, "B 操作不改 A 快照", "")
 	var ga2: Node = GameControllerScript.new()
 	root.add_child(ga2)
 	var ra: Dictionary = ga2.start_level("res://assets/levels/level_01.json", snap_a)
-	_check(ra.ok and ga2.session.slots.size() == 1 and ga2.session.pool[0].is_empty(),
-		"返回A恢复炮台/槽状态", str(ra))
+	_check(ra.ok and ga2.session.slots.find(snap_tid) >= 0
+		and ga2.session.queue_columns[col_a].size() == (snap_a.queue_columns[col_a] as Array).size(),
+		"返回A恢复槽位/队列状态", str(ra))
 	# 陈旧事件拒绝：同一总线内重开关卡后，旧 generation 事件不应投递
 	var old_gen: int = ga2.session.session_generation
 	ga2.start_level("res://assets/levels/level_01.json")
@@ -142,6 +140,7 @@ func _run() -> void:
 	_check(not stale_ok, "切关后旧代事件拒绝", "")
 
 	DirAccess.remove_absolute("user://saves/level_01.json")
+	DirAccess.remove_absolute("user://saves/level_02.json")
 
 	if _failures == 0:
 		print("TEST_PASS test_play")
@@ -150,67 +149,68 @@ func _run() -> void:
 	quit(0 if _failures == 0 else 1)
 
 
-# --- 工具 ---
-
-func _aim_at_voxel(gc: Node, voxel_id: int) -> Dictionary:
-	var data: RefCounted = gc.voxel_manager.data
-	var grid_center: Vector3 = data.positions[voxel_id] + Vector3(0.5, 0.5, 0.5)
-	var world: Vector3 = gc.voxel_model.world_from_grid() * grid_center
-	var origin := world + Vector3(0, -8.0, 0)
-	return {"origin": origin, "dir": (world - origin).normalized()}
-
-
-func _first_alive(gc: Node) -> int:
-	return int(gc.voxel_manager.state.alive_ids()[0])
-
-
-func _find_voxel_of_color(gc: Node, color_id: int) -> int:
-	for id in gc.voxel_manager.state.alive_ids():
-		if gc.voxel_manager.color_of(id) == color_id:
-			return id
-	return _first_alive(gc)
-
-
-func _other_color(gc: Node) -> int:
-	var vid := _first_alive(gc)
-	return _other_color_of(gc, gc.voxel_manager.color_of(vid))
-
-
-func _other_color_of(gc: Node, color_id: int) -> int:
-	for id in gc.voxel_manager.state.alive_ids():
-		var c: int = gc.voxel_manager.color_of(id)
-		if c != color_id:
-			return c
-	return 1 if color_id != 1 else 2
-
-
-func _probe_bounced_or_dead() -> bool:
-	var b: Dictionary = _probe_gc.ball_physics.system.ball_snapshot(_probe_ball)
-	if b.is_empty():
-		return true
-	return int(b.get("bounces", 0)) > 0 or not bool(b.get("active", false))
+# 驾驶策略（与离线验证器贪心一致，均为 CQ 允许的正常操作）：
+# 1) 空槽 → 上"有可达同色目标"的列首；2) ≥2 空槽时停泊不可达列首以暴露其后炮台；
+# 3) 满槽时取回一个 WAITING_TARGET 炮台腾位置
+func _drive(gc: Node) -> void:
+	if gc.session.outcome != "RUNNING":
+		return
+	var origin := _origin_grid(gc)
+	var free_slot := _leftmost_free(gc)
+	if free_slot >= 0:
+		for c in 5:
+			var col: Array = gc.session.queue_columns[c]
+			if col.is_empty():
+				continue
+			var t: Dictionary = gc.session.turrets[int(col[0])]
+			var found: Dictionary = gc.target_selector.find_target(int(t.color_id), origin,
+				gc.shot_ledger.is_available)
+			if found.get("ok", false):
+				gc.place_front(c)
+				return
+		# 停泊：没有可达列首且空槽 ≥2 → 上一个列首腾出队列深度
+		if _free_count(gc) >= 2:
+			for c in 5:
+				if not gc.session.queue_columns[c].is_empty():
+					gc.place_front(c)
+					return
+	else:
+		for i in 5:
+			var tid := int(gc.session.slots[i])
+			if tid >= 0 and gc.session.turrets[tid].state == "WAITING_TARGET" \
+					and int(gc.session.turrets[tid].get("in_flight", 0)) == 0:
+				gc.return_turret(i)
+				return
 
 
-func _step_until(gc: Node, cond: Callable, max_steps: int) -> void:
-	for i in max_steps:
-		gc.step(1.0 / 60.0)
-		if cond.call():
-			return
-
-
-func _has_event(name: String) -> bool:
-	for e in _events:
-		if e.event == name:
-			return true
-	return false
-
-
-func _count_event(name: String) -> int:
+func _free_count(gc: Node) -> int:
 	var n := 0
-	for e in _events:
-		if e.event == name:
+	for i in mini(gc.session.unlocked_slots, 5):
+		if int(gc.session.slots[i]) == -1:
 			n += 1
 	return n
+
+
+# 原点方向循环：6 轴向 + 12 棱向（等价真机"拖拽旋转模型使炮口相对模型换向"）
+func _apply_orientation(gc: Node, idx: int) -> void:
+	var dirs := [
+		Vector3(0, -1, 0), Vector3(0, 0, 1), Vector3(0, 0, -1),
+		Vector3(1, 0, 0), Vector3(-1, 0, 0), Vector3(0, 1, 0),
+		Vector3(1, -1, 0), Vector3(-1, -1, 0), Vector3(0, -1, 1), Vector3(0, -1, -1),
+		Vector3(1, 0, 1), Vector3(-1, 0, 1), Vector3(1, 0, -1), Vector3(-1, 0, -1),
+		Vector3(1, 1, 0), Vector3(-1, 1, 0), Vector3(0, 1, 1), Vector3(0, 1, -1),
+	]
+	_cur_dir = dirs[idx % dirs.size()].normalized()
+	# 同步旋转模型姿态（对格空间弹道无影响，仅保持与真机表现一致）
+	gc.voxel_model.global_transform.basis = Basis.from_euler(
+		Vector3(0.0, deg_to_rad(float(idx % 18) * 20.0), 0.0))
+
+
+func _leftmost_free(gc: Node) -> int:
+	for i in mini(gc.session.unlocked_slots, 5):
+		if int(gc.session.slots[i]) == -1:
+			return i
+	return -1
 
 
 func _check(cond: bool, name: String, detail: String) -> void:

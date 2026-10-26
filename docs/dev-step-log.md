@@ -164,3 +164,206 @@
 ## 入槽自动连发规则澄清（2026-10-26，Codex）
 - 用户明确炮台在炮位即连续发射，弹数0消失。更新G02/T04及可玩性任务/架构第10节，替代历史点击逐发。
 - 设计稳定turret_id调度、成功才扣弹、多个炮位独立冷却、生命周期停止、下一发道具确定性消费；发射间隔0.25秒仅为执行建议。仅文档变更，待Claude实现。
+
+## 可玩性补齐实现 A→E（CLAUDE 执行，2026-10-26，进行中）
+- 按 playability-architecture §8 启动指令实施。先核验架构文档自基线 9c0025b 未变（md5 f3291c389243c2ea100ac9c483339cdd），按已读版本实现。
+- A 基础：auto_fire_scheduler.gd（0.25s 间隔、稳定 turret_id、失败不扣弹下周期重试+限频日志、弹尽/取回注销）；game_rules.gd 增 auto_fire_interval；ball_physics event_id 混入 session_generation 防重开后总线去重碰撞。
+- B 表现：marble_presenter.gd（turret_fire 生成可见球、帧同步 ball_snapshot、出界/失效幂等回收、idle 池上限32、颜色随炮台 palette）；hit_effects.gd 重写（BoxMesh 碎块+被消块体素色材质、命中点飘字、generation token 隔离旧 timer）；audio_presenter.gd 增 stop_all。
+- C 控制：game_controller.gd 重构（每局全新 EventBus；调色板=模型实际 color_ids 去重注入 rules；旧档无效色显式迁移保留 id/弹数/来源格/has_fired 并记录日志；恢复后 session_generation 保留本次运行代号；恢复有弹炮台重新注册调度；fire_slot 走表现层注入 origin_resolver；stop_session/set_paused 会话边界）。
+- D 界面/装配：hud_presenter.gd 重构（底部顺序槽行→池格→道具；点击已占位槽不发射仅提示"炮台入槽后自动连发"；取回模式开关；结算全屏遮罩 MOUSE_FILTER_STOP+重开/返回信号；连击标签 combo_update 专属订阅、refresh 不清；道具失败 toast；待发标记；slot_screen_center）；main.gd 重构（§3 固定生命周期 enter_level/restart_current_level/return_to_list；发射原点=槽屏幕中心相机射线∩边界AABB 内移0.1、朝模型中心，废除 (i-2)*2/-half*0.8 硬编码；_input 释放兜底；退后台 cancel_all+set_paused+落盘）；project.godot 拉伸 canvas_items+expand。
+- E 测试：新增 tests/integration/test_auto_fire.gd（30 断言全 PASS：无点击恰好2发弹尽消失、多炮台独立+压缩不漏不重、失败不扣弹重试、待发道具仅一发、取回停止、恢复代号保留+重注册、无效色迁移、弹珠表现生成/同步/回收）；test_presentation.gd 增 13 断言（点槽不发射、取回模式、结算遮罩、连击标签、待发标记、槽屏幕中心）全 PASS；10 套 headless 全绿；主场景 headless 冒烟 exit=0 无 SCRIPT ERROR。
+- 文档：GDD 执行默认决策新增 D12（auto_fire_interval=0.25 执行方默认）+ D03 发射起点改为相机射线∩边界AABB 描述；README 同步入槽自动连发。
+- 待办：APK 重建（versionCode=2/0.2.0）、真机完整通关验收（安放→自动连发→可见球→碎裂→全清→通关弹窗→重开）、T23 30 轮、双端性能、提交推送。
+
+
+## 十二项优化分步设计交付（CQ-20261026）
+【时间】：2026-10-26（Asia/Shanghai）
+【执行人】：Codex
+【完成工作】：新增 docs/tasks/cannon-queue-redesign.md，覆盖用户十二项需求，制定 S00→S11 顺序任务、模块和状态契约、每色 Q+S+F=V 守恒、一发一块及取消返还、五列随机长度队列、列首点击上位和补位、跟手与上方构图、4000～5000块青蛙、自制炮台素材、道具冲突处理、v2存档、16项验收用例和Claude提示词；docs/plan.md增加当前任务入口。
+【当前进度】：仅设计完成；游戏代码、素材、测试和APK未在本轮执行。已有未提交可玩性改动保持原样。
+【下发给Claude的任务】：CQ-20261026 / S00→S11；用户自行交接。此前Orca只读发现被沙箱阻止，升级权限请求由用户中止；未发送任务、未启动Claude。本轮按用户纠正不再调度Agent。
+【风险记录】：严格每色守恒要求替代旧反弹多消、随机造弹及异色万能弹；相关行为在新设计中明确标注。队列守恒不等于可解，正式关卡需有验证解和真实UI完整通关。旧模型设备性能结果不能替代新模型验收。
+【下一步触发条件】：用户将新任务文档交给Claude；Claude从S00核对当前工作区，按顺序实现、自测、记录，不等待Codex批准。
+
+## CQ-20261026 / S00 基线、复现与文档契约（CLAUDE 执行，2026-10-26，完成）
+任务：CQ-20261026 / S00
+前置步骤及证据：已读 cannon-queue-redesign.md、plan.md、game-design.md、architecture.md、playability-architecture.md、最新日志与测试报告；Pixel 7a（35181JEHN08868）adb 在线核实。
+修改文件与作用：新增 reports/desktop/cq/s00-baseline.md（基线+复现+替代映射+接口契约）、reports/android/cq/cq-acceptance.md（CQ-T01~T16 全 NOT_RUN）、reports/android/cq/{env-baseline.txt,event_log_cq_baseline.jsonl,perf_log_cq_baseline.jsonl} 与 4 张截图证据、reports/desktop/cq/git-baseline-diff.txt；game-design.md 增"本轮规则替代声明"；architecture.md 增"CQ-20261026 架构增量"（新模块/状态契约/事件白名单/存档 v2）。
+本步实现/参数决定：基线=9c0025b+16改动+6未跟踪（可玩性补齐 A~E），不撤销；"发了不消"根因=已证实（中心盲射隧道+异色反弹陷阱，run_id 1792985373 事件流：194发仅149毁、卡死段69发0毁）；旋转反向=真实错误（main.gd 本地欧拉角累加，不同朝向轴翻转），方向符号待 S02 标记法实测。
+实际命令、退出码、设备、构建标识：adb getprop/dumpsys/screencap 均 exit=0；Pixel 7a Android17 API37 arm64-v8a 1080×2400；已装 versionCode=2/0.2.0；Godot 4.7.2.stable。
+测试：S00 不产生用例结果；CQ-T01~T16 NOT_RUN（reports/android/cq/cq-acceptance.md）。
+截图或录屏现象及日志路径：reports/android/cq/cq_rot_before/after.png（右滑眼球质心x仅+5px）、px3_v3_stall.png（中空隧道卡死 218 余块）、px3_restart.png（纯色矩形池卡、模型居中）。
+颜色守恒统计：本步无运行事务；旧模型基线 V0={绿286,白56,黄17,深灰8}=367。
+未解决问题与修复计划：旋转方向符号待 S02 实测；v3 驱动发现道具按钮隐藏后 HBox 重排导致盲点偏移（v4 已用截图分段检测解决，供 S11 驱动复用）。
+下一步：S00 通过条件满足（根因已证实、设备无阻塞），进入 S01 精细青蛙。
+
+## CQ-20261026 / S01 精细青蛙与容量（CLAUDE 执行，2026-10-26，完成）
+任务：CQ-20261026 / S01
+前置步骤及证据：S00 完成（reports/desktop/cq/s00-baseline.md）。
+修改文件与作用：新增 tools/voxel_export/gen_frog02_vox.py（程序化自制 frog_02：身体+加厚头部双椭球、白眼球+深灰瞳孔、黄腹、浅绿背脊、四肢+橙脚趾、橙嘴线）、tools/voxel_export/preview_render.py（正交投影预览工具）；assets/vox_source/frog_02.vox + assets/models/json/frog_02.json；gen_frog_vox.py/vox2json.py 调色板+浅绿(8)/橙(9)、vox2json 上限 1200→6000；voxel_loader.gd MAX_VOXELS 1200→6000；voxel_renderer.gd 块缝=格距3%（2%~4% 区间，碰撞仍按逻辑格）；gen_fixtures.py 增 model_6000/bad_count_high 夹具；level_01.json→frog_02.json、model_revision=2.0-f867f19c33c4；test_import.gd 增 frog_02/6000/6001 断言；test_play.gd 修复"异色不删除"用例自身缺陷（原球色与目标同色、此前偶然通过；改为瞄准最底面体素+异色球）。
+本步实现/参数决定：frog_02=4105 块（目标 4000~5000 内）；六色=绿3167/黄311/浅绿299/白218/橙80/深灰30，均有对应消除源，无有炮无块；bbox=(0,0,0)~(28,19,17)；voxel_size=1.0；sha256=f867f19c33c43dbbd1035c6fc52e184471a141ff6ef334bceb37b2f737eb70c5；容量上限 6000 为任务指定默认值。块缝 3% 为执行方决定（任务允许 2~4%）。
+实际命令、退出码、设备、构建标识：gen_frog02_vox.py/vox2json.py/gen_fixtures.py/preview_render.py 均 exit=0；10 套 headless 全 TEST_PASS（含修复后 test_play）。
+测试：CQ-T02 PASS（4105 唯一体素、每色统计断言一致、palette 完整、越界仍拒绝）；T01 回归 PASS（300/1200/6000 合法、非法坐标/色/数量/schema 拒绝）；其余套件回归 PASS。
+截图或录屏现象及日志路径：reports/desktop/cq/frog_02_front.png / frog_02_side.png（正面可见眼白+瞳孔+橙嘴+黄腹+橙趾，侧面可见背脊轮廓）。
+颜色守恒统计：V0={1:3167,4:311,6:218,7:30,8:299,9:80}，总计 4105；本步无运行事务。
+未解决问题与修复计划：frog_02 在真机的渲染/性能未测（S02 构图、S10 性能覆盖）；青蛙正面朝向沿用 frog_01 约定（vox+y=正面），S02 跟手验收时复核。
+下一步：S01 通过条件满足，进入 S02 跟手旋转与上方构图。
+
+## CQ-20261026 / S02 跟手旋转与上方构图（CLAUDE 执行，2026-10-26，完成）
+任务：CQ-20261026 / S02
+前置步骤及证据：S01 完成（frog_02 4105 块已入 level_01）。
+修改文件与作用：scripts/app/main.gd（_apply_rotation 改为相机空间增量四元数 Basis(Q(up,rot.x)*Q(right,rot.y))*basis，替代本地欧拉累加；新增 _frame_model：包围球×1.08 拟合相机距离、直立相机下移使模型视觉中心落在内容区 y≈33%、灵敏度=PI/屏宽、初始姿态 yaw=π 正面朝相机）；scripts/input/gesture_router.gd（pitch_limit 1.4→1.2217=±70°）；tests/unit/test_input.gd 钳制断言同步；新增 tests/unit/test_rotation.gd（CQ-T01 标记法 7 断言）、tools/frame_probe.gd（多分辨率构图探针，headless 下 root.size 显式模拟长宽比）。
+本步实现/参数决定：跟手方案=每步绕当前相机 up/right 轴的小增量旋转（任意朝向下前表面随手指同向移动）；俯仰越界时只保留偏航分量；构图参数：纵向拟合 0.44、横向 0.90、上移 0.16（透视非线性约再抬 1.7%，实测中心≈32%）。首轮 0.46/0.17 在 19.5:9/16:9 下包围球顶部 8.3% 越界（探针 FRAME_CLIP），调至 0.44/0.16 后三档全 FRAME_OK。
+实际命令、退出码、设备、构建标识：Godot 4.7.2 headless；test_rotation.gd TEST_PASS（7/7）；frame_probe 1080×2400(20:9) x 8.3~91.7% y 13.3~52.8%、1230×2400(19.5:9) x 10.3~89.7% y 11.0~54.4%、4266×2400(16:9) x 38.5~61.5% y 11.0~54.4%，均 FRAME_OK，exit=0。
+测试：CQ-T01 桌面投影证据 PASS（默认视角右/下拖瞳孔标记同向移动；偏航 90° 后固定前面标记仍同向；±70° 钳制；中心不漂移；横扫全宽≈180°）；真机画面复核随下一次 APK 构建（S07/S10）执行，当前记 NOT_RUN。
+截图或录屏现象及日志路径：桌面无新截图；探针输出见本日志。
+颜色守恒统计：本步无运行事务。
+未解决问题与修复计划：真机方向/构图复核待 APK 重建后执行（设备仍跑旧 0.2.0 包）；模型区/槽位区 UI 分区在 S07 落地后复查不重叠。
+下一步：S02 通过条件满足（桌面证据齐、真机部分列入构建后验收），进入 S03 五列守恒队列生成器。
+
+## CQ-20261026 / S03 五列守恒队列生成器（CLAUDE 执行，2026-10-26，完成）
+任务：CQ-20261026 / S03
+前置步骤及证据：S02 完成（构图/跟手桌面证据齐）。
+修改文件与作用：新增 scripts/gameplay/cannon_queue_service.gd（五列可变长队列：每色 V0[c] 拆分 30~80 普通炮+1~29 余数末门，拒绝采样 16 次+确定性兜底 clampi(rest-80,30,80)；Fisher-Yates 洗牌后前 5 门一列一门、其余随机落列；conservation_report/front_of/pop_front/push_front/column_lengths/shuffle_columns）；新增 tests/unit/test_cannon_queue.gd；新增 scripts/gameplay/fire_geometry.gd（槽位屏幕中心=(i+0.5)w/5,0.61h → 相机射线∩格空间边界AABB 内移0.1，运行时与验证器共用）；新增 tools/cq_verify.gd（离线可解性验证器：表面前沿+DDA 预过滤+扫掠确认，贪心策略=发射可达/上可达列首/≥2空槽停泊/满槽取回/90朝向循环）；assets/levels/level_01.json 写入 queue_seed=4、merge_max=160；level_catalog.gd 白名单+queue_seed。
+本步实现/参数决定：列数=5、弹量 30~80（余数 1~29）为任务文档指定；种子来自关卡配置经离线验证（可解性属关卡数据契约）。
+实际命令、退出码、设备、构建标识：Godot 4.7.2 headless；test_cannon_queue TEST_PASS（拆分边界/100样本五列≥1门/ID唯一/逐色守恒/总量=4105/种子复现/洗牌保留数据）；cq_verify.gd -- 1 100：VERIFY_PASS seed=4 actions=4260（种子1~3 贪心卡死、seed=4 全程可解），证据 reports/desktop/cq/s03-solution.json（691KB 全动作序列），exit=0。
+测试：CQ-T03 桌面 PASS（不同种子生成合法/可变长/每色守恒）。
+截图或录屏现象及日志路径：/tmp/cq_verify.log（VERIFY_PASS 行）；s03-solution.json。
+颜色守恒统计：生成即守恒 sum(Q[c])==V0[c] 逐色成立，总弹药=4105=模型体素数。
+未解决问题与修复计划：贪心策略对种子1~3失败属"贪心非全能"，不代表不可解；正式关卡固定 seed=4。
+下一步：S03 通过，进入 S04 一键上位与固定五槽。
+
+## CQ-20261026 / S04 一键上位、固定五槽与事务（CLAUDE 执行，2026-10-26，完成）
+任务：CQ-20261026 / S04
+前置步骤及证据：S03 完成（seed=4 验证解）。
+修改文件与作用：scripts/gameplay/slot_service.gd 重写（固定五槽 int 数组、空位-1不压缩、leftmost_free/place_at/remove_at/slot_index_of）；scripts/level/level_session.gd 重写 v2（turrets 字典唯一所有者+queue_columns+slots+v0_counts；restore 归一化 JSON 往返的 String 键/float 数值为 int——实测修复坏档恢复 bug）；game_controller.gd 重写（place_front 原子事务：占槽→出列→READY→注册调度→queue_changed/slots_changed；return_turret 无在途立即回来源列队首、有在途 RETURN_PENDING 停新发射待结算）；merge_service.gd 重写（显式合成两列列首、同色、≤160不截断、被合成炮台弹药并入后清除）；prop_service.gd 随机排=shuffle_columns 只重排（无牌可洗不扣次数）；outcome_state.gd 重写（无目标不判负；队列+槽全空且无在途球才 LOST）；event_bus.gd 白名单+4（queue_changed/slots_changed/turret_state_changed/shot_resolved）；level_repository.gd 增 backup_save（v1→.v1.bak）；main.gd _on_level_chosen v1 旧档备份后重开。
+本步实现/参数决定：槽位数据唯一容器=session.turrets，slots/queue_columns 只存 turret_id 引用；LOADING 动画归表现层，逻辑即 READY。
+实际命令、退出码、设备、构建标识：Godot 4.7.2 headless；test_gameplay TEST_PASS（28 断言：固定五槽/最左空槽/占用拒绝/合成同色150/超160不截断/随机排保留ID弹量/无牌不扣/胜负真值表含不判负分支）；test_persistence TEST_PASS（v2 往返/键值归一化/v1拒绝/坏档拒绝），exit=0。
+测试：CQ-T04/T05 桌面逻辑层 PASS（上位事务/空位不横移）；真机交互部分随 APK 验收。
+截图或录屏现象及日志路径：无新截图；测试输出见 /tmp/test_*.log。
+颜色守恒统计：合成/取回/随机排均不造弹不丢弹（test_gameplay 断言）。
+未解决问题与修复计划：无。
+下一步：S04 通过，进入 S05 目标化自动发射与射击账本。
+
+## CQ-20261026 / S05 目标化自动发射、一发改一块与守恒（CLAUDE 执行，2026-10-26，完成）
+任务：CQ-20261026 / S05
+前置步骤及证据：S04 完成。
+修改文件与作用：新增 scripts/gameplay/shot_ledger.gd（预订 voxel→shot 防双中、幂等结算、3s 超时扫描、逐色在途 F[c]、compact 64）；新增 scripts/gameplay/target_selector.gd（逐色表面前沿缓存+DDA 预过滤+扫掠确认，与验证器同规则）；game_controller.gd（try_auto_fire 只在有可达同色未预订目标时发射；_fire_at 预订→生成 stop_on_hit 球→成功才扣弹 S--F++；_on_ball_hit 命中预订目标且同色才删除 F--V--D++，否则返还 F--S++；出界/超时/保存前均返还；归零 DRAINING 暂留、最后一发结算后移除离场；conservation_audit 逐色 Q+S+F=V、V≤V0）；projectile_system.gd/ball_physics.gd 增 stop_on_hit（首个命中即停，一发一块）；auto_fire_scheduler.gd waiting_target/in_flight/no_ammo 静默重试；combo_state.gd 重写全局连击（1.5s 窗口）；hud_presenter.gd 全重写（五分区、五列列首+深度"还有n门"、五槽等宽、取回开关、结算遮罩、combo_update 全局 streak 签名）。
+本步实现/参数决定：ball_radius=0.35、SHOT_TIMEOUT=3.0s（设计默认）；发射原点契约收敛 FireGeometry（main.gd _resolve_fire_origin 与 cq_verify 同一实现）。
+实际命令、退出码、设备、构建标识：Godot 4.7.2 headless；13 套件全绿：test_shot_ledger（15断言）、test_auto_fire（37断言：80发真实打空离场+守恒审计/同色命中=预订目标/mismatch返还S++/无同色目标不发射不扣弹 WAITING_TARGET 不判负/取回两路径/恢复重注册/无效色迁移/弹珠表现）、test_play（13断言：grid_300 正常操作完整通关 8245步≈137s模拟、终局逐色 Q+S+F=V=0、全局连击x2+、通关后拒绝、失败真值表、A→B→A v2恢复、旧代事件拒绝）、test_presentation（五列HUD/点槽不发射/取回模式/全局连击标签/待发标记）、主场景 headless 120帧无 SCRIPT ERROR，exit=0。
+测试：CQ-T06/T07/T08/T09 桌面逻辑层 PASS（可达才发射/预订防双中/超时出界返还/最后一发结算）；CQ-T15 桌面夹具版 PASS（真机 frog_02 完整通关待 S11）。
+截图或录屏现象及日志路径：测试日志 /tmp/test_play.log 等。
+颜色守恒统计：test_play 全程每销毁一批校验守恒，终局 Q+S+F=V=0 逐色成立；test_auto_fire 80 发耗尽后审计 ok。
+未解决问题与修复计划：test_play 曾误用"旋转模型世界变换"驱动（格空间弹道不变）导致卡死，已修正为移动格空间原点（等价真机炮口相对模型换向）；真机触摸/画面验收随 S07~S11。
+下一步：S05 通过，进入 S06 炮台素材与碎块表现。
+
+## CQ-20261026 / S06 炮台素材（CLAUDE 执行，2026-10-26，进行中→暂停交接 Codex）
+任务：CQ-20261026 / S06
+前置步骤及证据：S05 完成（13 套件全绿，见上三条）。
+修改文件与作用：新增 tools/cannon_gen.py（PIL 程序化矢量分层绘制，CC0 自制：圆角梯形底座/白色待染色炮身/金属灰炮管+深色炮口/64px 炮口闪光）→ assets/cannons/{cannon_base,cannon_body,cannon_barrel,cannon_flash}.png（256² 透明分层，炮管枢轴=(128,150)=炮身圆心，炮口尖≈(128,26)，距枢轴 124px）；hit_effects.gd 修复 combo_update 旧两参数签名（真机连击必崩隐患，已改 args[0]=全局 streak）。
+本步实现/参数决定：素材方案=分层透明纹理+程序化炮管旋转（任务文档推荐路径）；炮身白色运行时按 palette color_id modulate 染色。
+实际命令、退出码、设备、构建标识：python3 tools/cannon_gen.py exit=0（CANNON_GEN_OK，四图 bbox 校验通过）；test_presentation 回归 TEST_PASS；主场景 headless 60 帧 0 SCRIPT ERROR。
+测试：本步无新用例；既有 13 套件保持全绿。
+截图或录屏现象及日志路径：三张分层素材图已人工目检（轮廓清晰）。
+颜色守恒统计：本步无运行事务。
+未解决问题与修复计划（S06 剩余工作，交接）：
+ 1) 新建 scripts/presentation/cannon_view.gd（Control：base/body/barrel 三层 TextureRect KEEP_ASPECT_CENTERED 对齐 + 弹药数字 Label 白字粗描边 1~160 + pressed 信号；状态：queued/front/back/disabled/waiting/recoil/draining/locked；recoil() 后坐 tween + muzzle_flash() 闪光；muzzle_screen_center()=枢轴屏点+aim_dir×(124/256×实际边长)）。
+ 2) hud_presenter.gd：五槽与五列列首按钮换成 CannonView（锁槽/空槽/结算中/待取回状态映射），道具行不变。
+ 3) 炮管瞄准：HUD 每帧对有炮槽位计算炮口朝向（有 PENDING 票据→目标体素投影，否则模型中心投影），turret_fire 时后坐+闪光。
+ 4) 发射起点来自可见炮口：fire_geometry.gd 增 screen_point→origin 泛化；main.gd _resolve_fire_origin 改用 hud 炮口屏点（默认朝上偏移≈0.025h）；建议用炮口偏移重跑 tools/cq_verify.gd 复核 seed=4（失败则换种子并改 level_01.json queue_seed）。
+ 5) hit_effects.gd：碎片尺寸 bug（BoxMesh 0.08×scale 0.05~0.12 相乘过小）→ 目标碎片边长 0.08~0.18 体素（如 mesh 0.13 × scale 0.62~1.38）；加同色光圈；预算≤512、寿命≤0.8s 已满足。
+ 6) marble 亮球高光（emission）；每次删除只播一次效果（已满足）。
+ 7) 素材清单记录（作者/方法/源文件/日期）写入 assets 说明文件。
+下一步：Codex 继续 S06 剩余 7 项 → S07 五列界面 → S08 指定目标/提示 → S09 存档 v2 完善 → S10 性能+APK → S11 真机完整通关验收（Pixel 7a 在线，勿用模拟器）。
+
+## CQ-20261026 / S06 炮台素材（CLAUDE 执行，2026-10-26，完成）
+任务：CQ-20261026 / S06（收尾上条 7 项剩余工作）
+前置步骤及证据：S06 素材生成完成（上条）；Codex 因网络问题未接手，CLAUDE 继续。
+修改文件与作用：
+- scripts/presentation/cannon_view.gd（新增 class_name CannonView）：base/body/barrel/flash 四层 TextureRect，PIVOT_UV=(128,150)/256，MUZZLE_DIST_UV=124/256；API set_cannon(color,ammo)/set_visual_state/set_aim_dir/muzzle_screen_center/fire_feedback（后坐 0.05s+回位 0.09s+闪光 0.1s）；状态 empty/locked/back/waiting/draining/front；弹药数字白字 outline_size=10 支持 1~160。
+- scripts/presentation/hud_presenter.gd：五槽与五列列首改用 CannonView（_slot_views/_column_views 替换 _slot_buttons/_column_buttons）；refresh 映射 DRAINING→draining、RETURN_PENDING/WAITING_TARGET→waiting、未解锁→locked、空槽→empty；新增 camera 注入 + _process 每帧炮管瞄准（shot_ledger.ticket_by_turret 取 PENDING 目标投影，否则模型中心）；_on_fire_feedback→fire_feedback；slot_muzzle_screen_center() 提供可见炮口屏点（空/锁槽回退槽位中心契约）。
+- scripts/gameplay/fire_geometry.gd：新增 MUZZLE_LEN_UV/muzzle_screen_point()/screen_point_origin_world()，muzzle_origin_world 委托同一契约（运行时与离线验证器共用）。
+- scripts/gameplay/shot_ledger.gd：新增 ticket_by_turret（瞄准用）。
+- scripts/app/main.gd：enter_level 注入 hud.camera；_resolve_fire_origin 改用 hud.slot_muzzle_screen_center + screen_point_origin_world（hud 空/锁回退 FireGeometry.muzzle_screen_point）。
+- scripts/presentation/hit_effects.gd：碎块棱长修复 0.13×scale 0.62~1.38=0.08~0.18 体素（原 0.08×0.05~0.12 过小）；新增 spawn_ring 同色光圈（TorusMesh unshaded+emission，0.3s 扩散淡出，不计粒子上限）。
+- scripts/presentation/marble_presenter.gd：弹珠材质 emission=球色×0.6 提亮。
+- docs/asset-manifest.md：四张炮台贴图来源登记（PIL 程序生成，tools/cannon_gen.py，CC0，2026-10-26）。
+- tests/unit/test_cannon_view.gd（新建 16 断言：状态映射/炮口契约数学/瞄准/零向量/后坐闪光/锁/结算中/后排隐藏数字）；tests/unit/test_presentation.gd 更新 CannonView API（_slot_views/_column_views/state/锁/空 + 粒子+光圈子节点 8 + 棱长范围断言）。
+实际命令、退出码、设备、构建标识：桌面 headless（macOS）；全部脚本 --check-only exit=0；14 套件全绿（test_cannon_queue/cannon_view/event_bus/gameplay/input/shot_ledger/voxel/rotation/presentation/persistence/auto_fire/ball/import/play，其中 test_play 全程通关 grid_300 复测 PASS）；主场景 headless --quit-after 3 exit=0、0 SCRIPT ERROR；tools/cq_verify.gd -- 4 1 → VERIFY_PASS seed=4 actions=4229（新炮口偏移契约下 seed=4 仍合法，level_01.json 无需改）。
+测试：14/14 PASS（桌面 headless）；真机画面验收留 S10/S11。
+截图或录屏现象及日志路径：reports/desktop/cq/s03-solution.json（验证器解）；素材图已目检。
+颜色守恒统计：cq_verify 全程审计守恒（Q+S+F=V，V+D=V0）通过；test_auto_fire/test_play 守恒断言绿。
+未解决问题与修复计划：炮管瞄准/闪光/光圈/弹珠提亮的真机目视验收合并至 S10/S11。
+下一步：S07 五列界面打磨（深队列滚动/输入优先级/12px 移动阈值）。
+
+## CQ-20261026 / S07 五列界面与完整上位表现（CLAUDE 执行，2026-10-26，完成）
+任务：CQ-20261026 / S07
+前置步骤及证据：S06 完成（14 套件全绿 + seed=4 复验 VERIFY_PASS，见上条）。
+修改文件与作用：
+- scripts/presentation/hud_presenter.gd：① 队列区每列改为 ColumnClip 裁切窗（内嵌类，mouse_filter=STOP 消费拖拽→拖队列不转模型）+ 3 门 CannonView 视图复用池（_column_pools，不为整列建节点）+ 深度标签（"还有 N 门"/"末门"/"上翻 N"）；② _col_offset 滚动偏移（scroll_column_by_px 整行吸附，只有 offset=0 的实际列首可操作，滚动不能把后排变列首）；③ ColumnClip._gui_input 12 逻辑像素阈值区分点击/滚动（SCROLL_THRESHOLD_PX）；④ 上位动画=残影飞行（0.18s 列首→槽位 TextureRect 残影）+ 槽位落位弹跳 + 队列整体上移一行（0.15s tween_method），数据事务先于动画，动画可被 refresh 打断；⑤ 守恒调试面板（仅 OS.is_debug_build()，"守恒"按钮切换 per-color Q/S/F/V/V0 表，调 controller.conservation_audit）；⑥ _on_column_tap：上翻状态点击只提示不上位、点窗口后排不操作。
+- scripts/presentation/cannon_view.gd：新增 place_feedback() 落位弹跳（pivot 居中 1.15×0.08s→1.0×0.12s）。
+- tests/unit/test_presentation.gd：新增 S07 断言 16 条（窗口映射/后排禁用/深度提示/5px 不滚 15px 滚/整行吸附/上翻点击不上位/点后排不操作/残影生成与回收/上移收敛），全套 51 断言。
+本步实现/参数决定：滚动按整行吸附（不做像素级连续滚动，保证"只有实际列首可操作"语义清晰）；可见窗口=3（S07"至少前三门"）；调试面板只在 debug 构建出现。
+实际命令、退出码、设备、构建标识：桌面 headless（macOS）；--check-only 解析 exit=0；14 套件全绿；主场景 headless exit=0、0 SCRIPT ERROR。
+测试：14/14 PASS（桌面）；test_presentation 51 断言含全部 S07 新增。
+截图或录屏现象及日志路径：三种长宽比完整界面+上位录屏属真机视觉验收，合并至 S10/S11（Pixel 7a）。
+颜色守恒统计：本步无运行事务变更；test_auto_fire/test_play 守恒断言保持绿。
+未解决问题与修复计划：真机触摸滚动/三种长宽比目视验收待 S10/S11。
+下一步：S08 道具/合成/连击/终局对齐（指定目标替代任意指、胜利需无未结算票据、死局完整性错误、5 秒无进展提示、合成独立模式）。
+
+## CQ-20261026 / S08 道具、合成、连击与终局规则对齐（CLAUDE 执行，2026-10-26，完成）
+任务：CQ-20261026 / S08
+前置步骤及证据：S07 完成（14 套件全绿，见上条）。
+修改文件与作用：
+- 指定目标替代任意指（§2.4）：prop_service.gd PROPS any_color→designated_target，激活只置 pending_effects.designated_selecting（不扣次，重复激活拒绝）；game_controller.gd 新增 designated_state/designated_cancel/designated_select_turret/designated_select_voxel——同色+未预订+confirm_reachable（target_selector 新增 confirm_reachable/pick_voxel，与正常选靶同一扫掠契约）全部通过才扣次并发 item_activated；try_auto_fire 经 _designated_target_for 优先锁定指定目标，失效清除并发 designated_expired（不退款）；turret 字典新增 designated_target 动态字段。
+- 异色万能弹路径移除：projectile_system.spawn/ball_physics.spawn_ball 删 any_color 参数与字段；hit_resolver.gd（含旧异色消除+旧连击 API 的无引用死代码）删除。
+- 存档/配置迁移：level_session.gd 默认 prop_counts/pending_effects 改 designated_target/designated_selecting，restore 时旧档 any_color 计数并入 designated_target、选择模式不落盘；game_rules.gd 默认值同步；level_01.json initial_props any_color:6→designated_target:6。
+- 终局规则（S08 §4/§6）：outcome_state.evaluate 增 pending_tickets 参数——全清但有无未结算票据不判胜；死局分支（队列+槽全空、无球无票据、余块>0）在严格守恒下不可达，到达即守恒破坏 → outcome=ERROR + integrity_error 事件，不再包装成正常失败（level_lose 路径移除）；event_bus 白名单加 designated_expired/integrity_error。
+- HUD（hud_presenter.gd）：道具行 any_color→"指定目标"（PROP_LABELS/PROP_PENDING 同步）；新增"合成"独立模式开关（非消耗道具，两列列首同色合成、失败提示、自动退出）；指定目标选择流程（点炮位选炮→main 路由模型点击→designated_pick_at，异色/遮挡/预订/点空分类提示且不扣次）；designated_expired→toast"指定目标已失效"；integrity_error→结算遮罩"数据完整性错误请重开本关"；5 秒无进展提示"旋转模型或更换炮台"（RUNNING 且未暂停才计时，消除/上位/发射/合成清零）。
+- main.gd：模型点击路由——指定目标等选体素阶段、12px 内未移动的点按 designated_pick_at 处理（优先级高于旋转）；订阅 integrity_error 存档。
+本步实现/参数决定：选择模式不持久化（恢复后不处于选择中）；指定目标在被接受后"下一发优先"，若取消返还目标仍存活则保持锁定（重试不额外扣次）；连击无改动（已是全局 1.5s 窗口、step() 受 is_running 门控天然暂停相容）。
+实际命令、退出码、设备、构建标识：桌面 headless（macOS）；11 个改动脚本 --check-only 全过；15 套件全绿（新增 tests/integration/test_designated.gd 19 断言：不扣次三类拒绝/接受扣次/优先发射/失效提示不退款/全程守恒）；主场景 headless exit=0、0 SCRIPT ERROR。
+测试：15/15 PASS（桌面）；test_gameplay 胜负真值表改为"全空+余块→integrity_error（不包装成失败）/全清有未结算票据不判胜"；test_play 死局用例同步改 ERROR。
+截图或录屏现象及日志路径：桌面无画面；指定目标/合成模式/停滞提示的真机交互验收合并至 S10/S11。
+颜色守恒统计：test_designated 末尾 conservation_audit 逐色 OK；test_auto_fire/test_play 守恒断言保持绿。
+未解决问题与修复计划：指定目标点选与合成模式的真机触摸验收待 S10/S11。
+下一步：S09 存档 v2 完善（模型哈希、RNG 状态）与生命周期。
+
+## CQ-20261026 / S09 新存档与生命周期（CLAUDE 执行，2026-10-26，完成）
+任务：CQ-20261026 / S09
+前置步骤及证据：S08 完成（15 套件全绿，见上条）。
+修改文件与作用：
+- 快照 v2 字段（level_session.gd）：to_snapshot/restore 增 rng_state、model_hash、rules_version=2；restore 拒绝 version!=2；旧档迁移 any_color→designated_target 保留、designated_selecting 强制清零（选择模式不落盘）。
+- 恢复校验（game_controller.gd）：_hash_model 用 HashingContext MD5（positions+colors 序列化 PackedFloat32Array 字节流）；恢复分支顺序 = session.restore → model_hash 不符("model_changed") → rules_version!=2("rules_version_changed") → 代号校验 → _validate_restored（炮台 ID 唯一、origin_column∈0..4、调色板颜色合法、逐色 Q+S==V，拒绝时 "snapshot_invalid: ..."）→ RNG 续跑（_rng.seed/_rng.state 双恢复）；_migrate_invalid_colors 移除（S09 §4 不静默迁移弹量）。修复 _validate_restored 中 var cid 类型推断解析错误（显式 int 标注）。
+- 存档写入：save_session 前 session.rng_state = _rng.state；原子写（tmp+rename+校验）沿用既有实现。
+- 旧档处置（main.gd + level_list_presenter.gd）：选关时 v1 旧档 → LevelRepository.backup_save 备份 + show_notice("关卡内容已更新，本关重新开始（旧档已备份）")后全新进入；恢复被拒（坏档/模型变更/规则变更/守恒破坏）→ 备份原档 + 全新会话重开，不静默覆盖；新增 show_notice UI。
+本步实现/参数决定：v1 旧档不迁移只备份重开（文档 §4）；model_hash 覆盖模型全量几何与颜色，换模型即旧档作废；恢复后 session_generation 保留本次运行代号（旧事件天然失效）。
+实际命令、退出码、设备、构建标识：桌面 headless（macOS）；5 个改动脚本 --check-only 全过；15 套件全绿（test_auto_fire 新增三类坏档拒绝断言：无效色 snapshot_invalid/弹药+1 conservation_broken/model_hash=deadbeef model_changed；test_persistence 新增 v2 往返 rng_state/model_hash/rules_version 与 any_color 迁移断言）；主场景 headless 8s exit=0、0 SCRIPT ERROR。
+测试：15/15 PASS（桌面）。
+截图或录屏现象及日志路径：桌面无画面；v1 备份提示与坏档重开的真机流程验收合并至 S10/S11。
+颜色守恒统计：坏档守恒校验逐色 Q+S==V 拒绝 +1 弹药档；test_auto_fire/test_persistence 守恒断言保持绿。
+未解决问题与修复计划：v1→v2 备份提示的真机目视、30 轮生命周期稳定性待 S10/S11。
+下一步：S10 真机构建与性能（Pixel 7a 重打包 APK、版本号/SHA256 记录、FPS/p95/内存采样、三种长宽比截图）。
+
+## CQ-20261026 / S10 进行中——真机触摸修复 + 选靶/物理性能优化与回归修复（CLAUDE 执行，2026-10-26，进行中）
+任务：CQ-20261026 / S10（真机性能与交互验收）
+前置步骤及证据：S09 完成（15 套件全绿）；S10 已构建安装 APK 0.3.0（version_code=3）于 Pixel 7a（35181JEHN08868）。
+本轮修改文件与作用：
+- 真机队列列触摸失效根因修复（hud_presenter.gd）：CannonView._ready() 在 add_child 时把 mouse_filter 重置为 STOP，吞掉队列区全部触摸；池视图 IGNORE 必须在 add_child 之后设置。修复后真机点击列首上位→自动补位→同色自动发射链路实测可用。
+- 选靶性能（target_selector.gd）：逐色表面前沿去重集合（_frontier_set）防膨胀；暴露面位掩码 _face_mask（删除时 6 邻增量补面）+ 面半空间预过滤（首中必经暴露面，dot 阈值 0.4 便宜剔除背向候选）；结果负缓存 _target_cache（粗量化 key=颜色+原点 0.5 格，gen 失效）；热点 _last_target（上次目标+6 邻同色复核，可达性单调只减不增保证安全）；全扫描时间片 ≤3ms 断点续扫（_scan_state 按 key+gen，预订跳过时不缓存否定）。
+- 空间索引重写（voxel_spatial_index.gd）：键 Vector3i→打包 int（21bit/轴），27 邻域改预计算打包偏移表 OFF27 免每格 27 次 Vector3i 构造+对象哈希；build 保留 Vector3i 转换的四舍五入语义。
+- 关键回归与修复：重写后 test_designated 2 断言失败（designated_expired 不发）+ test_ball 4 断言失败。定位：打包键以位掩码表示坐标，球从模型界外负格坐标（底面下方边界原点）起飞，DDA 经过负格时掩码回绕 + 正邻域偏移加法会溢出 int64 符号位 → 邻域查找漏掉坐标 0 平面真实体素 → 球穿模不命中。修复：pack/pack_v 统一加 2^10 坐标偏置（[-1024, ~2^21) 坐标全非负，加减不借位）。test_ball 失败为测试自身直填 _cell 仍用 Vector3i 键，改用 pack_v 后通过。
+- 调试输出清理：main.gd [input]、hud_presenter.gd [clip]/[hud]/[layout]/[perf]、game_controller.gd [perf] find_target 探针全部移除；target_selector.gd 孤儿 _ph0 移除（时间片 _slice_t0 为功能代码保留）。
+- 新增调试工具（tools/，不入运行时）：debug_spatial_index.gd（OFF27 全坐标 [-40,40] 对照 pack 直算 off_bad=0、at() 4105 全命中、几何暴力 7053 期望候选 0 漏——含界外负坐标起点）、debug_designated.gd（指定目标流逐步追踪，修复后 vid=631 首发命中、expired=1、锁定清除）。
+实际命令、退出码、设备、构建标识：桌面 headless（macOS）godot 4.7.2；索引三项校验全 0；debug_designated 确认首发命中；15 套件全绿（回归后复跑）。真机 APK 待清理后重建（当前设备安装包仍含调试输出与修复前索引）。
+测试：15/15 PASS（桌面）；tools/cq_verify.gd 后台复跑中（验证选靶+索引改动后离线通关仍成立）。
+截图或录屏现象及日志路径：reports/android/cq/s10/（此前截图：关卡列表/进关/上位修复后/五炮台并列）。
+颜色守恒统计：15 套件内含守恒断言全绿；cq_verify 复跑待结果。
+未解决问题与修复计划：修复前 APK 仍在设备上，需重建重装；120s 稳态性能采样（≥30FPS、p95≤50ms、≤512MB、60s 增长≤10%）待新包重做。
+下一步：cq_verify 复跑确认 → 重建 APK（记录 commit/脏状态/模型哈希/APK SHA256）→ Pixel 7a 装包 → 120s 性能采样 + 三长宽比截图 → S10 收尾。
+
+## CQ-20261026 / S10 平台转向记录（2026-10-26，用户指示）
+用户指示：放弃 Android 打包循环，改 Mac app 开发（540×1200 手机屏幕比例窗口），平台不重要，优先可玩。CQ 文档中真机强制条款（T11-T16 真机部分）由用户本人暂停；后续性能/稳定性验收在 Mac 进行，Android 仅在用户要求时回归。
+已完成（转向前）：APK 0.3.2/code5（SHA256 a2999d4b…57f8）装 Pixel 7a；旋转压力下暴露持续 7.5fps 死亡螺旋（p95 140ms+，物理追帧放大）；cq_verify 复跑 VERIFY_PASS（seed=4 actions=4229，扫描共享几何改动后仍成立）。
+进行中：PerfProbe 子系统耗时探针已入代码（find_target/ball_step/hud_refresh/spawn_burst/mm_remove/scheduler_tick，5s 窗写 perf_log.jsonl probe 字段），用于在 Mac 定位旋转后扫帧尖刺的真实元凶。
+下一步：Mac 窗口复现旋转压力场景 → 读 probe 分布 → 对症修复 → 15 套件 + cq_verify 回归。

@@ -36,11 +36,13 @@ def main():
 		print('written', name, len(doc['voxels']))
 	w('model_300.json', make_doc(grid_voxels(300)))
 	w('model_1200.json', make_doc(grid_voxels(1200)))
+	w('model_6000.json', make_doc(grid_voxels(6000)))  # CQ-20261026：新上限边界合法
 	bad_dup = grid_voxels(300); bad_dup[5] = dict(bad_dup[4])
 	w('bad_dup.json', make_doc(bad_dup))
 	bad_color = grid_voxels(300); bad_color[7]['color_id'] = 99
 	w('bad_color.json', make_doc(bad_color))
 	w('bad_count.json', make_doc(grid_voxels(10)))
+	w('bad_count_high.json', make_doc(grid_voxels(6001)))  # CQ-20261026：超 6000 拒绝
 	bad_schema = make_doc(grid_voxels(300)); bad_schema['schema_version'] = 1
 	w('bad_schema.json', bad_schema)
 

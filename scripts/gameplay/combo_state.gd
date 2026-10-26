@@ -1,8 +1,12 @@
 extends RefCounted
 
-# P4-06 连击（G07）：按球计数；成功删除 +1 并发布；球结束同次提交清零；仅视觉反馈，不加伤害。
+# CQ-20261026 §2.2 连击：全局连续命中序列——成功消除 +1，1.5 秒无成功命中清零。
+# 替代旧"同球反弹次数"统计。仅视觉反馈，不加伤害、无额外消块奖励。
 
-var _combo: Dictionary = {}       # ball_id -> int
+const WINDOW_SEC := 1.5
+
+var streak := 0
+var _since_hit := 1e9
 var _bus: RefCounted
 var _level_id := ""
 
@@ -10,26 +14,26 @@ var _level_id := ""
 func setup(bus: RefCounted, level_id: String) -> void:
 	_bus = bus
 	_level_id = level_id
+	streak = 0
+	_since_hit = 1e9
 
 
-func combo_of(ball_id: int) -> int:
-	return int(_combo.get(ball_id, 0))
+func on_destroy(meta: Dictionary) -> void:
+	streak += 1
+	_since_hit = 0.0
+	_publish(meta)
 
 
-func on_destroy(ball_id: int, meta: Dictionary) -> void:
-	_combo[ball_id] = combo_of(ball_id) + 1
-	_publish(ball_id, meta)
+func tick(dt: float, meta: Dictionary) -> void:
+	if streak <= 0:
+		return
+	_since_hit += dt
+	if _since_hit > WINDOW_SEC:
+		streak = 0
+		_publish(meta)
 
 
-# 球结束（出界/逃逸）：连击清零，与结束同次提交（G07）
-func on_ball_end(ball_id: int, meta: Dictionary) -> void:
-	if combo_of(ball_id) > 0:
-		_combo[ball_id] = 0
-		_publish(ball_id, meta)
-	_combo.erase(ball_id)
-
-
-func _publish(ball_id: int, meta: Dictionary) -> void:
+func _publish(meta: Dictionary) -> void:
 	if _bus == null:
 		return
-	_bus.publish("combo_update", [ball_id, combo_of(ball_id)], meta)
+	_bus.publish("combo_update", [streak], meta)

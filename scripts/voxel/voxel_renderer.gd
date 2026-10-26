@@ -1,4 +1,5 @@
 extends RefCounted
+const PerfProbe := preload("res://scripts/diagnostics/perf_probe.gd")
 
 # 单 MultiMesh 体素渲染（阶段3完整版：整量构建 + 尾交换删除 + voxel_id↔slot 双向映射）
 # 观测契约：显示实例数等于存活数；交换删除后两向映射一致；无逐块 Node
@@ -14,7 +15,8 @@ var _visible_count: int = 0
 
 func build(data: RefCounted) -> MultiMeshInstance3D:
 	var box := BoxMesh.new()
-	box.size = Vector3.ONE * data.voxel_size
+	# CQ-20261026/S01：块缝=格距 3%（任务要求 2%~4%）；碰撞仍按逻辑格定义，视觉缝隙不是穿透通道
+	box.size = Vector3.ONE * data.voxel_size * 0.97
 	var mat := StandardMaterial3D.new()
 	mat.vertex_color_use_as_albedo = true
 	mat.roughness = 0.9
@@ -45,6 +47,7 @@ func build(data: RefCounted) -> MultiMeshInstance3D:
 
 
 func remove_voxel(voxel_id: int) -> bool:
+	var _pt := PerfProbe.t0()
 	# 尾交换删除：把最后一个可见实例搬到被删 slot，收缩可见数
 	if not slot_of.has(voxel_id):
 		return false
@@ -65,6 +68,7 @@ func remove_voxel(voxel_id: int) -> bool:
 	slot_of.erase(voxel_id)
 	_visible_count = last
 	mm.visible_instance_count = _visible_count
+	PerfProbe.add("mm_remove", _pt)
 	return true
 
 

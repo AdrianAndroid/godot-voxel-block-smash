@@ -1,1 +1,19 @@
-{"schema_version":1,"level_id":"level_01","display_number":1,"model_path":"res://assets/models/json/frog_01.json","model_revision":"1.0","rules":{"initial_slots":3,"merge_max":99,"ball_speed":12.0,"initial_props":{"speed_x2":3,"add_slot":1,"any_color":2,"shuffle":2}}}
+{
+  "schema_version": 1,
+  "level_id": "level_01",
+  "display_number": 1,
+  "model_path": "res://assets/models/json/frog_02.json",
+  "model_revision": "2.0-f867f19c33c4",
+  "queue_seed": 4,
+  "rules": {
+    "initial_slots": 3,
+    "merge_max": 160,
+    "ball_speed": 40.0,
+    "initial_props": {
+      "speed_x2": 3,
+      "add_slot": 1,
+      "shuffle": 12,
+      "designated_target": 6
+    }
+  }
+}

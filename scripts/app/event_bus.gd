@@ -8,6 +8,10 @@ const EVENTS := [
 	"level_loaded", "voxel_destroyed", "ball_hit_voxel", "ball_out_of_bounds",
 	"turret_fire", "turret_merged", "combo_update", "level_win", "level_lose",
 	"item_activated",
+	# CQ-20261026 §3 新增白名单
+	"queue_changed", "slots_changed", "turret_state_changed", "shot_resolved",
+	# CQ/S08：指定目标失效提示；死局完整性错误（替代正常判负）
+	"designated_expired", "integrity_error",
 ]
 
 var _subs: Dictionary = {}        # event -> Array[Dictionary{callable, level_id}]

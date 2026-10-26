@@ -24,10 +24,10 @@ func _initialize() -> void:
 	_check(not router.handle_press(3, false), "第二指忽略", "")
 	_check(router.handle_drag(3, Vector2(100, 0)) == Vector2.ZERO, "第二指拖动零旋转", "")
 
-	# 俯仰钳制
+	# 俯仰钳制（CQ-20261026/S02：±70°=1.2217rad）
 	for i in 100:
 		router.handle_drag(2, Vector2(0, 100))
-	_check(router.current_angles().y <= 1.4, "俯仰钳制≤1.4rad", str(router.current_angles()))
+	_check(router.current_angles().y <= 1.2217, "俯仰钳制≤70°", str(router.current_angles()))
 
 	# 失焦清理后旧指针无效
 	router.cancel_all()

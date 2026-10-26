@@ -1,86 +1,90 @@
 extends SceneTree
 
-# P4-01/02/04/07 玩法服务自测（纯逻辑层）：池/槽/合成/道具
+# CQ-20261026/S03~S05 玩法服务自测（纯逻辑层）：固定五槽/合成/道具/胜负
+# 五列守恒队列生成见 tests/unit/test_cannon_queue.gd
 # 运行：godot --headless --path . -s tests/unit/test_gameplay.gd
 
 var _failures := 0
 
 const Session := preload("res://scripts/level/level_session.gd")
 const Rules := preload("res://scripts/data/game_rules.gd")
-const Pool := preload("res://scripts/gameplay/pool_service.gd")
+const Queue := preload("res://scripts/gameplay/cannon_queue_service.gd")
 const Slot := preload("res://scripts/gameplay/slot_service.gd")
 const Merge := preload("res://scripts/gameplay/merge_service.gd")
 const Props := preload("res://scripts/gameplay/prop_service.gd")
+const Outcome := preload("res://scripts/gameplay/outcome_state.gd")
 
 
 func _initialize() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 12345
-
-	# --- 池生成与选择（G03） ---
-	var s: RefCounted = Session.new()
 	var r: RefCounted = Rules.new()
-	Pool.generate_pool(s, r, rng)
-	_check(s.pool.size() == 9, "池=9格", "%d" % s.pool.size())
-	var all_filled := true
-	for t in s.pool:
-		if t.is_empty() or t.ammo_count < 1 or t.ammo_count > 5 or not (t.color_id in r.palette_color_ids):
-			all_filled = false
-	_check(all_filled, "生成炮台弹量1~5、颜色在调色板内", "")
-	s.pool[4] = {}
-	_check(Pool.turret_at(s, 4).is_empty(), "空位不可选", "")
-	_check(Pool.turret_at(s, -1).is_empty() and Pool.turret_at(s, 9).is_empty(), "越界不可选", "")
-	var t0: Dictionary = Pool.take(s, 0)
-	_check(not t0.is_empty() and s.pool[0].is_empty(), "取出后池格清空", "")
-	_check(Pool.put_at(s, 0, t0) and not Pool.put_at(s, 0, t0), "放回原格/占用拒绝", "")
+	r.merge_max = 160
 
-	# --- 发射槽（G02） ---
-	var s2: RefCounted = Session.new()
-	s2.unlocked_slots = 3
-	var placed := 0
-	for i in 5:
-		var t := Pool.make_turret(s2, 1, 2)
-		if Slot.place(s2, r, t, i):
-			placed += 1
-	_check(placed == 3 and Slot.capacity(s2, r) == 3, "容量=已解锁槽，满槽拒绝", "placed=%d" % placed)
-	var back: Dictionary = Slot.take_back(s2, 1)
-	_check(back.ok and back.turret.turret_id != 0 and back.turret.ammo_count == 2, "未发射取回ID/弹量不变", str(back))
-	_check(s2.slots.size() == 2, "取回后槽清空一格", "%d" % s2.slots.size())
-	s2.slots[0].has_fired = true
-	_check(not Slot.take_back(s2, 0).ok, "已发射炮台不可取回", "")
-	_check(s2.slots.size() == 2, "拒绝取回不丢炮台", "%d" % s2.slots.size())
+	# --- 固定五槽（CQ §2.1/S04） ---
+	var s: RefCounted = Session.new()
+	s.unlocked_slots = 3
+	Slot.init_slots(s)
+	_check(s.slots == [-1, -1, -1, -1, -1], "固定五槽初始化全空", str(s.slots))
+	_check(Slot.capacity(s, r) == 3, "容量=已解锁3", "")
+	_check(Slot.is_free(s, r, 2) and not Slot.is_free(s, r, 3), "第4槽未解锁不可用", "")
+	s.turrets[11] = {"turret_id": 11, "color_id": 1, "ammo_remaining": 30, "origin_column": 0}
+	_check(Slot.place_at(s, 1, 11), "放槽1", "")
+	_check(Slot.leftmost_free(s, r) == 0, "最左空闲=0（空位不压缩）", "")
+	_check(not Slot.place_at(s, 1, 12), "占用槽拒绝", "")
+	_check(Slot.slot_index_of(s, 11) == 1 and Slot.slot_turret_id(s, 1) == 11, "turret_id 定位槽位", "")
+	_check(Slot.remove_at(s, 1) == 11 and int(s.slots[1]) == -1, "移除后空位保留原位", "")
+	s.unlocked_slots = 5
+	_check(Slot.leftmost_free(s, r) == 0, "解锁5槽后最左空闲=0", "")
 
-	# --- 合成（G06 + D02） ---
+	# --- 合成（CQ §2.4：两列列首、同色、≤160 不截断） ---
 	var s3: RefCounted = Session.new()
-	s3.pool = [{}, {}, {}, {}, {}, {}, {}, {}, {}]
-	s3.pool[0] = Pool.make_turret(s3, 2, 40)
-	s3.pool[1] = Pool.make_turret(s3, 2, 50)
-	s3.pool[2] = Pool.make_turret(s3, 3, 10)
-	var m: Dictionary = Merge.merge(s3, r, 0, 1)
-	_check(m.ok and m.turret.ammo_count == 90, "同色合成弹量相加 40+50=90", str(m))
-	_check(s3.pool[1].is_empty(), "合成后仅保留一个结果", "")
-	_check(not Merge.merge(s3, r, 0, 2).ok, "异色拒绝", "")
-	s3.pool[2] = Pool.make_turret(s3, 2, 20)
-	_check(not Merge.merge(s3, r, 0, 2).ok and s3.pool[0].ammo_count == 90 and s3.pool[2].ammo_count == 20,
-		"超限拒绝且状态不变（90+20>99）", "")
-	_check(not Merge.merge(s3, r, 0, 5).ok, "空位合成拒绝", "")
+	Queue.generate(s3, {1: 100, 2: 100}, RandomNumberGenerator.new())  # 至少两列有炮
+	s3.turrets.clear()
+	for c in 5:
+		s3.queue_columns[c] = []
+	s3.turrets[1] = {"turret_id": 1, "color_id": 2, "ammo_remaining": 70, "origin_column": 0}
+	s3.turrets[2] = {"turret_id": 2, "color_id": 2, "ammo_remaining": 80, "origin_column": 1}
+	s3.turrets[3] = {"turret_id": 3, "color_id": 3, "ammo_remaining": 10, "origin_column": 2}
+	s3.queue_columns[0] = [1]
+	s3.queue_columns[1] = [2]
+	s3.queue_columns[2] = [3]
+	var m: Dictionary = Merge.merge_columns(s3, r, 0, 1)
+	_check(m.ok and int(m.turret.ammo_remaining) == 150, "同色合成 70+80=150", str(m))
+	_check(s3.queue_columns[1].is_empty() and not s3.turrets.has(2), "来源列弹出/被合成炮台清除", "")
+	_check(not Merge.merge_columns(s3, r, 0, 2).ok, "异色拒绝", "")
+	s3.queue_columns[2] = [3]
+	s3.turrets[3].color_id = 2
+	s3.turrets[3].ammo_remaining = 20
+	var m2: Dictionary = Merge.merge_columns(s3, r, 0, 2)
+	_check(not m2.ok and m2.reason == "overflow" and int(s3.turrets[1].ammo_remaining) == 150
+		and int(s3.turrets[3].ammo_remaining) == 20, "超限拒绝且不截断（150+20>160）", str(m2))
+	_check(not Merge.merge_columns(s3, r, 0, 1).ok, "空列合成拒绝", "")
+	_check(not Merge.merge_columns(s3, r, 0, 0).ok, "同列合成拒绝", "")
 
-	# --- 道具（G08~G11/G13 + D04） ---
+	# --- 道具（CQ §2.4：随机排只重排现有炮台） ---
 	var s4: RefCounted = Session.new()
+	s4.prop_counts = {"speed_x2": 3, "add_slot": 1, "designated_target": 2, "shuffle": 2}  # CQ/S08
 	var props := Props.new()
 	props.setup(null)
-	Pool.generate_pool(s4, r, rng)
-	var before_ids: Array = s4.pool.map(func(t: Dictionary) -> int: return t.turret_id)
+	Slot.init_slots(s4)
+	s4.turrets[21] = {"turret_id": 21, "color_id": 1, "ammo_remaining": 30, "origin_column": 0}
+	s4.turrets[22] = {"turret_id": 22, "color_id": 4, "ammo_remaining": 40, "origin_column": 0}
+	s4.queue_columns = [[21, 22], [], [], [], []]
 	var res: Dictionary = props.use(s4, r, "shuffle", rng, {})
 	_check(res.ok and res.count_after == 1, "随机排扣次数 2→1", str(res))
-	var after_ids: Array = s4.pool.map(func(t: Dictionary) -> int: return t.turret_id)
-	_check(before_ids != after_ids and s4.pool.size() == 9, "随机排整体刷新池", "")
-	Slot.place(s4, r, Pool.make_turret(s4, 5, 3), 0)
-	var slot_id: int = s4.slots[0].turret_id
-	props.use(s4, r, "shuffle", rng, {})
-	_check(s4.slots[0].turret_id == slot_id, "随机排不动槽内炮台", "")
+	var col0: Array = s4.queue_columns[0]
+	col0.sort()
+	_check(col0 == [21, 22] and int(s4.turrets[21].ammo_remaining) == 30,
+		"随机排保留 ID/颜色/弹量（仅重排）", str(s4.queue_columns[0]))
+	s4.queue_columns = [[21], [], [], [], []]
+	s4.queue_columns[0].pop_back()  # 队列全空
+	var sh_before: int = s4.prop_counts.shuffle
+	_check(not props.use(s4, r, "shuffle", rng, {}).ok
+		and int(s4.prop_counts.shuffle) == sh_before, "无牌可洗不执行不扣次数", "")
+	s4.prop_counts.shuffle = 0
 	_check(not props.use(s4, r, "shuffle", rng, {}).ok and int(s4.prop_counts.shuffle) == 0,
-		"次数归零拒绝且不负", "%d" % s4.prop_counts.shuffle)
+		"次数归零拒绝且不负", "")
 
 	res = props.use(s4, r, "add_slot", rng, {})
 	_check(res.ok and s4.unlocked_slots == 4, "加槽 3→4", str(res))
@@ -91,9 +95,51 @@ func _initialize() -> void:
 
 	res = props.use(s4, r, "speed_x2", rng, {})
 	_check(res.ok and s4.pending_effects.speed_x2, "速度×2待发设置", str(res))
-	res = props.use(s4, r, "any_color", rng, {})
-	_check(res.ok and s4.pending_effects.any_color, "任意指待发设置", str(res))
+	# CQ/S08 §2.4：指定目标激活只进选择模式、不扣次；重复激活拒绝
+	res = props.use(s4, r, "designated_target", rng, {})
+	_check(res.ok and bool(s4.pending_effects.get("designated_selecting", false))
+		and int(s4.prop_counts.designated_target) == 2, "指定目标进选择模式不扣次", str(res))
+	_check(not props.use(s4, r, "designated_target", rng, {}).ok
+		and int(s4.prop_counts.designated_target) == 2, "选择中重复激活拒绝且不扣次", "")
 	_check(not props.use(s4, r, "no_such_prop", rng, {}).ok, "未知道具拒绝", "")
+	s4.outcome = "WON"
+	_check(not props.use(s4, r, "speed_x2", rng, {}).ok, "终局后道具拒绝", "")
+
+	# --- 胜负（CQ §2.3 + S08：无目标不判负；死局=完整性错误；胜利需无未结算票据） ---
+	var s5: RefCounted = Session.new()
+	Slot.init_slots(s5)
+	s5.queue_columns = [[], [], [], [], []]
+	var oc := Outcome.new()
+	var bus := preload("res://scripts/app/event_bus.gd").new()
+	oc.setup(bus)
+	var _eid := [90000]
+	var meta := func() -> Dictionary:
+		_eid[0] += 1
+		return {"event_id": _eid[0], "level_id": "level_01", "session_generation": 1, "physics_tick": 0}
+	# S08 §6：余块>0、队列槽全空、无球无票据 → 守恒被破坏，记完整性错误而非正常判负
+	var ierrs := {"n": 0}
+	bus.subscribe("integrity_error", func(_a: Array, _m: Dictionary) -> void: ierrs.n += 1, "level_01")
+	_check(oc.evaluate(s5, 10, 0, 0, "level_01", meta.call()) == "ERROR"
+		and s5.outcome == "ERROR" and ierrs.n == 1, "全空+余块记完整性错误（不包装成失败）", "")
+	var s6: RefCounted = Session.new()
+	Slot.init_slots(s6)
+	s6.queue_columns = [[], [], [], [], []]
+	var oc2 := Outcome.new()
+	oc2.setup(bus)
+	# 有在途球不判负
+	_check(oc2.evaluate(s6, 10, 1, 1, "level_01", meta.call()) == "RUNNING", "有在途球不判负", "")
+	# 队列非空不判负（等待目标是正常态）
+	s6.queue_columns[0] = [99]
+	s6.turrets[99] = {"turret_id": 99, "color_id": 1, "ammo_remaining": 5}
+	_check(oc2.evaluate(s6, 10, 0, 0, "level_01", meta.call()) == "RUNNING", "队列有炮不判负", "")
+	# S08 §4：全清但有未结算票据 → 暂不判胜
+	_check(oc2.evaluate(s6, 0, 1, 1, "level_01", meta.call()) == "RUNNING", "全清有未结算票据不判胜", "")
+	# 通关优先且只发一次
+	var wins := {"n": 0}
+	bus.subscribe("level_win", func(_a: Array, _m: Dictionary) -> void: wins.n += 1, "level_01")
+	_check(oc2.evaluate(s6, 0, 0, 0, "level_01", meta.call()) == "WON" and wins.n == 1, "全清通关发一次", "")
+	oc2.evaluate(s6, 0, 0, 0, "level_01", meta.call())
+	_check(wins.n == 1, "通关不重复发布", "")
 
 	if _failures == 0:
 		print("TEST_PASS test_gameplay")

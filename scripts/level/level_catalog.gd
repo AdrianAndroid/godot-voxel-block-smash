@@ -5,7 +5,7 @@ extends RefCounted
 
 const SUPPORTED_SCHEMA := 1
 const MODEL_PREFIX := "res://assets/models/json/"
-const ALLOWED_KEYS := ["schema_version", "level_id", "display_number", "model_path", "model_revision", "rules"]
+const ALLOWED_KEYS := ["schema_version", "level_id", "display_number", "model_path", "model_revision", "rules", "queue_seed"]
 
 
 static func load_config(path: String) -> Dictionary:

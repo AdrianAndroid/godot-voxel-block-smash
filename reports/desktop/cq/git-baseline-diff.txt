@@ -1,0 +1,43 @@
+ M README.md
+ M assets/levels/level_01.json
+ M docs/dev-step-log.md
+ M docs/game-design.md
+ M docs/plan.md
+ M export_presets.cfg
+ M project.godot
+ M scripts/app/game_controller.gd
+ M scripts/app/main.gd
+ M scripts/data/game_rules.gd
+ M scripts/gameplay/pool_service.gd
+ M scripts/presentation/audio_presenter.gd
+ M scripts/presentation/hit_effects.gd
+ M scripts/presentation/hud_presenter.gd
+ M scripts/projectile/ball_physics.gd
+ M tests/unit/test_presentation.gd
+?? docs/tasks/cannon-queue-redesign.md
+?? reports/android/cq/
+?? reports/desktop/cq/
+?? scripts/gameplay/auto_fire_scheduler.gd
+?? scripts/gameplay/auto_fire_scheduler.gd.uid
+?? scripts/presentation/marble_presenter.gd
+?? scripts/presentation/marble_presenter.gd.uid
+?? tests/integration/test_auto_fire.gd
+?? tests/integration/test_auto_fire.gd.uid
+---
+ README.md                               |   2 +-
+ assets/levels/level_01.json             |   2 +-
+ docs/dev-step-log.md                    |  20 ++++
+ docs/game-design.md                     |   4 +-
+ docs/plan.md                            |   8 ++
+ export_presets.cfg                      |   4 +-
+ project.godot                           |   3 +-
+ scripts/app/game_controller.gd          | 106 ++++++++++++++++--
+ scripts/app/main.gd                     | 134 +++++++++++++++++++---
+ scripts/data/game_rules.gd              |   4 +
+ scripts/gameplay/pool_service.gd        |  19 +++-
+ scripts/presentation/audio_presenter.gd |   6 +
+ scripts/presentation/hit_effects.gd     |  58 +++++++++-
+ scripts/presentation/hud_presenter.gd   | 190 +++++++++++++++++++++++++-------
+ scripts/projectile/ball_physics.gd      |   4 +-
+ tests/unit/test_presentation.gd         |  51 +++++++++
+ 16 files changed, 539 insertions(+), 76 deletions(-)

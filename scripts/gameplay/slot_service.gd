@@ -1,42 +1,76 @@
 extends RefCounted
 
-# P4-02 发射槽：放入/取回/容量（G02）。槽元素 = 炮台字典 + origin_index（池来源格）。
+# CQ-20261026/S04：固定五槽位（元素 = turret_id 或 -1 空位）。
+# 空位不压缩、其他炮台不横向跳位；调度只用 turret_id；炮台数据唯一容器是 session.turrets。
+
+const SLOT_COUNT := 5
+const EMPTY := -1
+
+
+static func init_slots(session: RefCounted) -> void:
+	session.slots = []
+	for i in SLOT_COUNT:
+		session.slots.append(EMPTY)
+
 
 static func capacity(session: RefCounted, rules: RefCounted) -> int:
 	return mini(session.unlocked_slots, rules.max_slots)
 
 
-static func place(session: RefCounted, rules: RefCounted, turret: Dictionary, origin_index: int) -> bool:
-	if turret.is_empty() or session.slots.size() >= capacity(session, rules):
-		return false  # 满槽拒绝（G02）
-	var s := turret.duplicate(true)
-	s["origin_index"] = origin_index
-	session.slots.append(s)
+static func is_free(session: RefCounted, rules: RefCounted, slot_index: int) -> bool:
+	return slot_index >= 0 and slot_index < capacity(session, rules) \
+		and int(session.slots[slot_index]) == EMPTY
+
+
+# 最左空闲已解锁槽位；无返回 -1
+static func leftmost_free(session: RefCounted, rules: RefCounted) -> int:
+	for i in capacity(session, rules):
+		if int(session.slots[i]) == EMPTY:
+			return i
+	return -1
+
+
+static func slot_turret_id(session: RefCounted, slot_index: int) -> int:
+	if slot_index < 0 or slot_index >= session.slots.size():
+		return EMPTY
+	return int(session.slots[slot_index])
+
+
+static func slot_turret(session: RefCounted, slot_index: int) -> Dictionary:
+	var tid := slot_turret_id(session, slot_index)
+	if tid == EMPTY:
+		return {}
+	return session.turrets.get(tid, {})
+
+
+static func place_at(session: RefCounted, slot_index: int, turret_id: int) -> bool:
+	if slot_index < 0 or slot_index >= SLOT_COUNT or int(session.slots[slot_index]) != EMPTY:
+		return false
+	session.slots[slot_index] = turret_id
 	return true
 
 
-# 取回：仅未发射炮台允许（G02）。返回 {ok, turret, origin_index}
-static func take_back(session: RefCounted, slot_index: int) -> Dictionary:
-	if slot_index < 0 or slot_index >= session.slots.size():
-		return {"ok": false, "reason": "bad_index"}
-	var s: Dictionary = session.slots[slot_index]
-	if s.get("has_fired", false):
-		return {"ok": false, "reason": "has_fired"}
-	session.slots.remove_at(slot_index)
-	var t := s.duplicate(true)
-	t.erase("origin_index")
-	return {"ok": true, "turret": t, "origin_index": s.get("origin_index", -1)}
+static func remove_at(session: RefCounted, slot_index: int) -> int:
+	var tid := slot_turret_id(session, slot_index)
+	if tid != EMPTY:
+		session.slots[slot_index] = EMPTY
+	return tid
 
 
-static func remove_at(session: RefCounted, slot_index: int) -> Dictionary:
-	if slot_index < 0 or slot_index >= session.slots.size():
-		return {}
-	var s: Dictionary = session.slots[slot_index]
-	session.slots.remove_at(slot_index)
-	return s
+static func occupied_count(session: RefCounted) -> int:
+	var n := 0
+	for i in SLOT_COUNT:
+		if int(session.slots[i]) != EMPTY:
+			n += 1
+	return n
 
 
-static func slot_at(session: RefCounted, slot_index: int) -> Dictionary:
-	if slot_index < 0 or slot_index >= session.slots.size():
-		return {}
-	return session.slots[slot_index]
+static func is_empty(session: RefCounted) -> bool:
+	return occupied_count(session) == 0
+
+
+static func slot_index_of(session: RefCounted, turret_id: int) -> int:
+	for i in session.slots.size():
+		if int(session.slots[i]) == turret_id:
+			return i
+	return -1

@@ -42,6 +42,16 @@ static func load_snapshot(level_id: String) -> Dictionary:
 	return {"ok": true, "exists": true, "snapshot": parsed}
 
 
+# CQ-20261026/S09：v1 旧档备份（重命名 .v1.bak），由调用方决定重新开始
+static func backup_save(level_id: String) -> String:
+	var p := save_path(level_id)
+	if not FileAccess.file_exists(p):
+		return ""
+	var bak := p + ".v1.bak"
+	DirAccess.rename_absolute(p, bak)
+	return bak
+
+
 static func delete_save(level_id: String) -> void:
 	var p := save_path(level_id)
 	if FileAccess.file_exists(p):

@@ -4,7 +4,7 @@ extends RefCounted
 # 非法坐标/色/数量拒绝并定位字段；返回 {ok: bool, data: RefCounted(VoxelData), error: String}
 
 const MIN_VOXELS := 300
-const MAX_VOXELS := 1200
+const MAX_VOXELS := 6000  # CQ-20261026/S01：容量上限 1200→6000（frog_02 目标 4000~5000）
 const SUPPORTED_SCHEMA := 2
 
 

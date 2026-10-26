@@ -8,6 +8,7 @@ const LevelCatalog := preload("res://scripts/level/level_catalog.gd")
 var on_level_chosen: Callable = Callable()
 
 var _container: VBoxContainer
+var _notice: Label  # CQ/S09：旧档作废等提示（"关卡内容已更新，本关重新开始"）
 
 
 func _ready() -> void:
@@ -29,7 +30,23 @@ func _ready() -> void:
 	_container.offset_top = -300
 	_container.add_theme_constant_override("separation", 20)
 	add_child(_container)
+	_notice = Label.new()
+	_notice.anchor_left = 0.0
+	_notice.anchor_right = 1.0
+	_notice.anchor_top = 0.86
+	_notice.anchor_bottom = 0.94
+	_notice.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_notice.add_theme_font_size_override("font_size", 30)
+	_notice.add_theme_color_override("font_color", Color(1.0, 0.75, 0.4))
+	_notice.text = ""
+	add_child(_notice)
 	refresh()
+
+
+# CQ/S09 §4：旧档作废/模型更新等用户可见提示（不静默迁移）
+func show_notice(text: String) -> void:
+	if _notice != null:
+		_notice.text = text
 
 
 func refresh() -> void:
