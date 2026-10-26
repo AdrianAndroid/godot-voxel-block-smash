@@ -9,6 +9,9 @@ var interval := 0.25          # 发射间隔秒数（执行默认值，可进 ru
 var fire_by_slot := Callable()  # func(slot_index: int) -> Dictionary（控制器注入）
 var slot_index_of := Callable() # func(turret_id: int) -> int（控制器注入，找不到返回 -1）
 
+# FM/F5：完整否定扫描（waiting_target）重试间隔——旋转 2° 后重扫
+const WAIT_RETRY_SEC := 0.25
+
 var _cooldowns: Dictionary = {}  # turret_id -> 剩余冷却秒
 var _fail_streak: Dictionary = {}  # turret_id -> 连续失败次数（限频日志）
 
@@ -52,7 +55,7 @@ func tick(dt: float) -> void:
 			continue
 		var slot_index: int = slot_index_of.call(int(id))
 		if slot_index < 0:
-			_cooldowns.erase(id)  # 炮台已归零/取回
+			_cooldowns.erase(id)  # 炮台已归零离场
 			_fail_streak.erase(id)
 			continue
 		var res: Dictionary = fire_by_slot.call(slot_index)
@@ -61,14 +64,28 @@ func tick(dt: float) -> void:
 			if int(res.get("ammo_left", 1)) <= 0:
 				_cooldowns.erase(id)  # 归零移除，已发射球继续飞行（G05）
 			else:
-				_cooldowns[id] = interval
+				# FM/F2：相位保留冷却——把本步越过零点的欠额计入下一周期，
+				# 低帧率/粗步长下平均节奏仍收敛到 interval（防爆发也防拖慢）
+				_cooldowns[id] = clampf(interval + float(_cooldowns[id]), 0.0, interval)
 		else:
 			# 失败不扣弹、按冷却重试。CQ §2.3：等待同色目标/在途/弹尽结算中是正常等待，
 			# 不算失败、不刷日志；其余原因限频告警（§10）
 			var reason := str(res.get("reason", ""))
-			if reason in ["waiting_target", "in_flight", "no_ammo", "scan_pending"]:
+			if reason in ["in_flight", "in_flight_cap", "global_cap", "no_ammo"]:
 				_fail_streak.erase(id)
 				_cooldowns[id] = interval
+				continue
+			if reason == "scan_pending":
+				# FM/F2 §5.3：时间片扫描未完成 → 下一物理步立即续扫（断点续扫便宜）
+				_fail_streak.erase(id)
+				_cooldowns[id] = 0.0
+				continue
+			if reason == "waiting_target":
+				# FM/F5 节奏：完整否定扫描在持续旋转下永不命中负缓存（tver 每步变），
+				# 每步全量重扫会把 CPU 吃光（实测 wait_ratio 0.89 的元凶）。
+				# 8°/s 下 0.25s 仅转 2°，机会粒度不受损，扫描量降 ~15×。
+				_fail_streak.erase(id)
+				_cooldowns[id] = WAIT_RETRY_SEC
 				continue
 			var n := int(_fail_streak.get(id, 0)) + 1
 			_fail_streak[id] = n

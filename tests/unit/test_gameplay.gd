@@ -82,6 +82,10 @@ func _initialize() -> void:
 	var sh_before: int = s4.prop_counts.shuffle
 	_check(not props.use(s4, r, "shuffle", rng, {}).ok
 		and int(s4.prop_counts.shuffle) == sh_before, "无牌可洗不执行不扣次数", "")
+	# FM/F4：每列最多 1 门（总数≥2 但无可洗排列）同样拒绝不扣次数
+	s4.queue_columns = [[21], [22], [], [], []]
+	_check(not props.use(s4, r, "shuffle", rng, {}).ok
+		and int(s4.prop_counts.shuffle) == sh_before, "每列≤1门无可洗排列不扣次数", "")
 	s4.prop_counts.shuffle = 0
 	_check(not props.use(s4, r, "shuffle", rng, {}).ok and int(s4.prop_counts.shuffle) == 0,
 		"次数归零拒绝且不负", "")
@@ -95,6 +99,10 @@ func _initialize() -> void:
 
 	res = props.use(s4, r, "speed_x2", rng, {})
 	_check(res.ok and s4.pending_effects.speed_x2, "速度×2待发设置", str(res))
+	# FM/F4：已待发时重复使用拒绝且不扣次数（双击守卫）
+	var sx_before: int = s4.prop_counts.speed_x2
+	_check(not props.use(s4, r, "speed_x2", rng, {}).ok
+		and int(s4.prop_counts.speed_x2) == sx_before, "速度×2已待发拒绝不扣次数", "")
 	# CQ/S08 §2.4：指定目标激活只进选择模式、不扣次；重复激活拒绝
 	res = props.use(s4, r, "designated_target", rng, {})
 	_check(res.ok and bool(s4.pending_effects.get("designated_selecting", false))

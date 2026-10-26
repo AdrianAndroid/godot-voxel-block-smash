@@ -48,6 +48,27 @@ func ticket_by_turret(turret_id: int) -> Dictionary:
 	return {}
 
 
+# FM/F2 多球在途：HUD 炮管瞄准用最新一颗（最大 shot_id 的 PENDING 票据）
+func latest_ticket_by_turret(turret_id: int) -> Dictionary:
+	var best: Dictionary = {}
+	for id in tickets:
+		var t: Dictionary = tickets[id]
+		if int(t.turret_id) == turret_id and t.status == "PENDING" \
+				and (best.is_empty() or int(t.shot_id) > int(best.shot_id)):
+			best = t
+	return best
+
+
+# FM/F2 多球在途：某炮台 PENDING 票据数（应与 turret.in_flight 一致，审计用）
+func pending_count_by_turret(turret_id: int) -> int:
+	var n := 0
+	for id in tickets:
+		var t: Dictionary = tickets[id]
+		if int(t.turret_id) == turret_id and t.status == "PENDING":
+			n += 1
+	return n
+
+
 func ticket_by_ball(ball_id: int) -> Dictionary:
 	for id in tickets:
 		var t: Dictionary = tickets[id]

@@ -1,0 +1,24 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+  PASS: 关卡启动
+  PASS: 存在颜色1列首
+  PASS: 列首上位
+  PASS: 存在可达同色目标
+  PASS: 激活进选择模式不扣次
+  PASS: 选择模式状态查询
+  PASS: 未选炮位点模型拒绝不扣次
+  PASS: 空槽不能指定
+  PASS: 选择炮位
+  PASS: 异色拒绝不扣次
+  PASS: 点空处拒绝不扣次
+  PASS: 伪造预订
+  PASS: 已预订拒绝不扣次
+  PASS: 取消选择不扣次
+  PASS: 合法选择接受并扣次
+  PASS: 接受后退出选择模式
+  PASS: 指定目标优先发射
+  PASS: 指定目标失效提示一次（不退款）
+  PASS: 失效后优先锁定清除
+  PASS: 失效不退款
+  PASS: 指定目标全程逐色守恒
+TEST_PASS test_designated

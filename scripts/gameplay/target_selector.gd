@@ -24,7 +24,9 @@ var _frontier_set: Dictionary = {}  # color_id -> Dictionary{voxel_id:true}（�
 # 模型旋转改变格空间原点 → 换 key。
 var _target_cache: Dictionary = {}
 var _last_target: Dictionary = {}
-var _scan_state: Dictionary = {}  # ckey -> {bi, ii, gen, skipped_reserved}（时间片断点）
+var _scan_state: Dictionary = {}  # ckey -> {start, k, ii, gen, tver0, skipped_reserved}（时间片断点）
+var _rr_cursor: Dictionary = {}   # FM/F2：color_id -> 下次全扫起始桶（持续旋转下有界轮转，防饥饿）
+var _tver := 0                    # FM/F2：模型变换版本（控制器每步注入；负缓存随 gen+tver 双匹配失效）
 # 共享扫描几何（S10 性能）：buckets 只依赖 (color, gen)——按到模型中心距离分桶，
 # 与炮口原点无关 → 同色 4 炮塔每 gen 只付一次压缩+分桶，不再每原点重建（真机
 # 每原点冷建 ~10-20ms × 4 同帧叠加曾致 100ms+ 帧尖刺）。原点相关的可达性仍由
@@ -33,6 +35,9 @@ var _scan_geo: Dictionary = {}    # color_id -> {gen, buckets}
 var _destroy_gen := 0
 
 const NBUCKET := 24  # 距离分桶数（替代 lambda 排序：近者优先只影响早退速度）
+
+var scan_budget_us := 3000  # 单次 find_target 时间片预算（测试可注入小值验证断点续扫）
+var dbg_neg_served := 0     # 测试观测：负缓存命中次数
 
 # 暴露面位掩码（S10 性能预过滤）：bit i = DIRS6[i] 方向面暴露（邻格空）。
 # 首中必经暴露面 ⇒ 原点必须在该面外侧半空间（dot(origin-center, n) > 阈值），
@@ -51,6 +56,12 @@ func setup(voxel_manager: RefCounted, ball_radius: float = 0.35) -> void:
 	_data = voxel_manager.data
 	_radius = ball_radius
 	_rebuild_frontier()
+
+
+# FM/F2：控制器每物理步注入模型变换版本——持续旋转期间负缓存永不服务，
+# 扫描实时复核；同一 tver 内完整扫完才允许写负缓存（见 find_target 尾部）。
+func set_transform_version(tver: int) -> void:
+	_tver = tver
 
 
 func _rebuild_frontier() -> void:
@@ -106,11 +117,17 @@ func on_voxel_destroyed(voxel_id: int) -> void:
 # 找 color_id 的可达目标（排除已预订）。返回 {ok, voxel_id, target_grid_center} 或 {ok:false, reason}
 # S10 性能：负缓存 O(1) → 热点邻域复核（≤7 次 DDA+扫掠）→ 全扫描兜底。
 func find_target(color_id: int, origin_grid: Vector3, is_available: Callable) -> Dictionary:
-	var ckey := "%d|%d,%d,%d" % [color_id, int(origin_grid.x * 0.5),
-		int(origin_grid.y * 0.5), int(origin_grid.z * 0.5)]
+	# FM/F2：ckey 用 floori（截断对负坐标不对称，会错位缓存桶）
+	var ckey := "%d|%d,%d,%d" % [color_id, floori(origin_grid.x * 0.5),
+		floori(origin_grid.y * 0.5), floori(origin_grid.z * 0.5)]
 	var cached: Dictionary = _target_cache.get(ckey, {})
+	# FM/F5 节奏：负缓存只要求 gen+ckey 匹配（不再双匹配 tver）——ckey 已把世界固定原点
+	# 量化到 2 格网格，旋转导致的原点漂移在每格驻留 ~0.4s 内自然换新 key 重扫；
+	# tver 双匹配在持续旋转下永不命中，饥饿炮台每步全扫会吃光 CPU（实测 wait_ratio 0.89）。
+	# 代价：格边界附近否定结论最坏滞后一个驻留周期，仅表现为短暂等待，无错发。
 	if bool(cached.get("neg", false)) and int(cached.get("gen", -1)) == _destroy_gen:
-		return {"ok": false, "reason": "no_reachable_target"}  # 缓存的否定结果
+		dbg_neg_served += 1
+		return {"ok": false, "reason": "no_reachable_target"}  # 缓存的否定结果（gen+ckey 匹配）
 	# 热点复核：上次目标（可能已被自己打掉）+ 其 6 邻同色存活块
 	var hot := int(_last_target.get(ckey, -1))
 	if hot >= 0 and hot < _data.count:
@@ -127,14 +144,19 @@ func find_target(color_id: int, origin_grid: Vector3, is_available: Callable) ->
 					"target_grid_center": _data.positions[vid] + Vector3(0.5, 0.5, 0.5)}
 	var cand_list: Array = _frontier.get(color_id, [])
 	if cand_list.is_empty():
-		_target_cache[ckey] = {"neg": true, "gen": _destroy_gen}
+		_target_cache[ckey] = {"neg": true, "gen": _destroy_gen, "tver": _tver}
 		return {"ok": false, "reason": "no_alive_color"}
 	# 全扫描兜底：时间片 ≤3ms/次（S10：单帧预算保护）。断点续扫状态按 (key,gen) 保存，
 	# 体素删除推进 gen 后作废重扫；预订变化不推进 gen，恢复扫描时实时复查。
-	# 返回 scan_pending = 本次未扫完，调度器 0.25s 后续扫（炮台多等一拍，无玩法影响）。
+	# FM/F2 §5.3：scan_pending = 本次未扫完，调度器下一物理步立即续扫（冷却 0）。
+	# FM/F2 §11.3：起始桶按色轮转（_rr_cursor），持续旋转下不全从桶0重扫、防饥饿。
 	var st: Dictionary = _scan_state.get(ckey, {})
 	if st.is_empty() or int(st.get("gen", -1)) != _destroy_gen:
-		st = {"bi": 0, "ii": 0, "gen": _destroy_gen, "skipped_reserved": false}
+		# FM/F5：续扫状态锚定开扫原点（origin0/ckey0）——旋转中逐片换原点会产生
+		# "各片只测过当片原点"的混合否定，缓存后成真否定封锁（实测吞吐反降）。
+		st = {"start": int(_rr_cursor.get(color_id, 0)), "k": 0, "ii": 0,
+			"gen": _destroy_gen, "tver0": _tver, "skipped_reserved": false,
+			"origin0": origin_grid, "ckey0": ckey}
 	# 共享几何：按 (color, gen) 懒重建一次，同色多炮塔复用
 	var geo: Dictionary = _scan_geo.get(color_id, {})
 	if geo.is_empty() or int(geo.get("gen", -1)) != _destroy_gen:
@@ -164,16 +186,26 @@ func find_target(color_id: int, origin_grid: Vector3, is_available: Callable) ->
 		geo = {"gen": _destroy_gen, "buckets": buckets_new}
 		_scan_geo[color_id] = geo
 	var _slice_t0 := Time.get_ticks_usec()
+	var scan_origin: Vector3 = st.origin0  # FM/F5：整次扫描锚定开扫原点（跨片不漂）
 	var buckets: Array = geo.buckets
-	var bi: int = st.bi
-	while bi < NBUCKET:
+	# FM/F2 断点语义：{start=轮转起始桶, k=已扫桶数, ii=当前桶内下一索引}——
+	# 整桶扫完才推 k（旧实现预增 bi，续扫时跳过半扫桶的剩余候选 = §2.1 漏扫）
+	while st.k < NBUCKET:
+		var bi: int = (int(st.start) + int(st.k)) % NBUCKET
 		var bucket = buckets[bi]
-		bi += 1
 		if bucket == null:
+			st.k = int(st.k) + 1
+			st.ii = 0
 			continue
 		var ii: int = st.ii
 		var n: int = (bucket as Array).size()
 		while ii < n:
+			# FM/F2：预算检查在内层每次迭代顶部——三条 continue 路径与扫掠都受控
+			if Time.get_ticks_usec() - _slice_t0 > scan_budget_us:  # 时间片用尽：存断点下次续扫
+				st.ii = ii
+				_scan_state[ckey] = st
+				_prune_caches()
+				return {"ok": false, "reason": "scan_pending"}
 			var vid: int = bucket[ii]
 			ii += 1
 			if not is_available.call(vid):
@@ -181,7 +213,7 @@ func find_target(color_id: int, origin_grid: Vector3, is_available: Callable) ->
 				continue  # 已预订，跳过（防重复命中）
 			var center: Vector3 = _data.positions[vid] + Vector3(0.5, 0.5, 0.5)
 			# 首中必经暴露面 ⇒ 原点须在某一暴露面外侧半空间，否则便宜剔除
-			var rel := origin_grid - center
+			var rel := scan_origin - center
 			var mask := int(_face_mask[vid])
 			var facing := false
 			for fi in 6:
@@ -190,26 +222,41 @@ func find_target(color_id: int, origin_grid: Vector3, is_available: Callable) ->
 					break
 			if not facing:
 				continue
-			if _los_blocked(origin_grid, center):
+			if _los_blocked(scan_origin, center):
 				continue
-			var cands: Array = _voxels.sweep_candidates(origin_grid, center, _radius)
-			var hit: Dictionary = Solver.sweep(origin_grid, center, _radius, cands,
+			var cands: Array = _voxels.sweep_candidates(scan_origin, center, _radius)
+			var hit: Dictionary = Solver.sweep(scan_origin, center, _radius, cands,
 				func(id: int) -> Vector3: return _data.positions[id])
 			if bool(hit.get("hit", false)) and int(hit.get("voxel_id", -1)) == vid:
 				_last_target[ckey] = vid
 				_scan_state.erase(ckey)
+				_rr_cursor[color_id] = (bi + 1) % NBUCKET  # 下次从本桶之后开始
+				_prune_caches()
 				return {"ok": true, "voxel_id": vid, "target_grid_center": center}
-			if Time.get_ticks_usec() - _slice_t0 > 3000:  # 时间片用尽：存断点下次续扫
-				st.bi = bi
-				st.ii = ii
-				_scan_state[ckey] = st
-				return {"ok": false, "reason": "scan_pending"}
+		st.k = int(st.k) + 1
 		st.ii = 0
-	# 扫完无目标：有候选因预订被跳过时不缓存否定（预订释放可能翻正，预订不推进 gen）
+	# 扫完无目标：有候选因预订被跳过时不缓存否定（预订释放可能翻正，预订不推进 gen）。
+	# FM/F5：跨 tver 扫描的否定也允许缓存——续扫各片用当片原点（实时正确），
+	# 结论按 ckey 原点格服务，驻留周期后原点格变化自然重扫（见 find_target 头部注释）。
 	_scan_state.erase(ckey)
+	_rr_cursor[color_id] = (int(st.start) + 1) % NBUCKET
 	if not bool(st.skipped_reserved):
-		_target_cache[ckey] = {"neg": true, "gen": _destroy_gen}
+		_target_cache[st.ckey0] = {"neg": true, "gen": _destroy_gen, "tver": _tver}
+	_prune_caches()
 	return {"ok": false, "reason": "no_reachable_target"}
+
+
+# FM/F2：缓存有界裁剪——原点量化 key 随旋转漂移会无限累积，超限整体清空重建
+const CACHE_MAX := 256
+
+
+func _prune_caches() -> void:
+	if _target_cache.size() > CACHE_MAX:
+		_target_cache.clear()
+	if _last_target.size() > CACHE_MAX:
+		_last_target.clear()
+	if _scan_state.size() > CACHE_MAX:
+		_scan_state.clear()
 
 
 # CQ/S08：屏幕点选体素（指定目标 UI）——格空间射线小半径扫掠首个存活体素
@@ -249,7 +296,7 @@ func _los_blocked(p0: Vector3, p1: Vector3) -> bool:
 	if pos == endp:
 		return false
 	var d := p1 - p0
-	var step := Vector3i(signi(d.x), signi(d.y), signi(d.z))
+	var step := Vector3i(int(signf(d.x)), int(signf(d.y)), int(signf(d.z)))
 	var t_max := Vector3(INF, INF, INF)
 	var t_delta := Vector3(INF, INF, INF)
 	for ai in 3:

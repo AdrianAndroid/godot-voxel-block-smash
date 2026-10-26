@@ -28,6 +28,7 @@ var _remain_label: Label
 var _combo_label: Label
 var _toast_label: Label
 var _result_overlay: Control
+var _pause_overlay: Control       # FM/F4：运行中暂停遮罩（继续/重开/返回）
 var _result_title: Label
 var _column_views: Array[CannonView] = []   # 5 列列首炮台视图（= 池[0]，CQ/S06 与炮位共用 CannonView）
 var _column_pools: Array = []               # 5 列 × 3 门可见窗口（CQ/S07 视图复用池）
@@ -43,6 +44,7 @@ var _merge_button: Button = null   # CQ/S08：合成模式开关
 var _merge_mode := false
 var _merge_first := -1             # 合成模式已选的第一列
 var _idle_time := 0.0              # CQ/S08 §5：无进展计时（5s 提示）
+var _refresh_dirty := false        # FM/F4：事件驱动的刷新按帧合并（用户直接操作仍即时 refresh）
 var _toast_token := 0
 var _debug_button: Button = null   # CQ/S07：守恒调试面板开关（仅 debug 构建）
 var _debug_panel: Label = null
@@ -71,9 +73,12 @@ func bind(p_controller: Node) -> void:
 	if _debug_panel != null:
 		_debug_panel.visible = false
 	_result_overlay.visible = false
+	if _pause_overlay != null:
+		_pause_overlay.visible = false  # FM/F4：换局/重开时收起暂停遮罩
 	for e in ["voxel_destroyed", "turret_fire", "turret_merged", "item_activated",
 			"queue_changed", "slots_changed", "turret_state_changed", "shot_resolved"]:
-		controller.bus.subscribe(e, func(_a: Array, _m: Dictionary) -> void: refresh(),
+		# FM/F4：事件刷新只置脏标，_process 每帧最多合并执行一次（10-30 发/秒事件洪流不重建 N 次）
+		controller.bus.subscribe(e, func(_a: Array, _m: Dictionary) -> void: _refresh_dirty = true,
 			controller.session.level_id)
 	# 发射反馈（后坐+炮口闪光，仅成功发射后触发）
 	controller.bus.subscribe("turret_fire", _on_fire_feedback, controller.session.level_id)
@@ -96,6 +101,7 @@ func bind(p_controller: Node) -> void:
 		_merge_button.button_pressed = false
 		_merge_button.text = "合成"
 	_idle_time = 0.0
+	_refresh_dirty = false
 	refresh()
 
 
@@ -121,6 +127,11 @@ func _build_ui() -> void:
 	_remain_label = Label.new()
 	_remain_label.add_theme_font_size_override("font_size", 36)
 	top.add_child(_remain_label)
+	# FM/F4：运行中暂停按钮（继续/重开/返回，走控制器 _paused 门）
+	var pause_btn := _make_button("暂停", Color(0.25, 0.28, 0.35))
+	pause_btn.custom_minimum_size = Vector2(120, 60)
+	pause_btn.pressed.connect(_on_pause_pressed)
+	top.add_child(pause_btn)
 	# CQ/S07 §5：守恒调试面板（仅 debug 构建，正式 HUD 不堆实现细节）
 	if OS.is_debug_build():
 		_debug_button = _make_button("守恒", Color(0.2, 0.2, 0.25))
@@ -261,6 +272,47 @@ func _build_ui() -> void:
 	back_btn.custom_minimum_size = Vector2(480, 120)
 	back_btn.pressed.connect(func() -> void: back_requested.emit())
 	center_box.add_child(back_btn)
+
+	# FM/F4：暂停全屏遮罩（继续/重开/返回；暂停期 _paused 门冻结调度/物理/自动旋转/无进展计时）
+	_pause_overlay = ColorRect.new()
+	_pause_overlay.set_anchors_preset(PRESET_FULL_RECT)
+	_pause_overlay.color = Color(0, 0, 0, 0.6)
+	_pause_overlay.mouse_filter = MOUSE_FILTER_STOP
+	_pause_overlay.visible = false
+	add_child(_pause_overlay)
+	var pause_box := VBoxContainer.new()
+	pause_box.set_anchors_preset(PRESET_CENTER, false)
+	pause_box.offset_left = -260
+	pause_box.offset_right = 260
+	pause_box.offset_top = -260
+	pause_box.offset_bottom = 260
+	pause_box.add_theme_constant_override("separation", 40)
+	_pause_overlay.add_child(pause_box)
+	var pause_title := Label.new()
+	pause_title.text = "已暂停"
+	pause_title.add_theme_font_size_override("font_size", 96)
+	pause_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	pause_box.add_child(pause_title)
+	var resume_btn := _make_button("继续", Color(0.2, 0.45, 0.25))
+	resume_btn.custom_minimum_size = Vector2(480, 120)
+	resume_btn.pressed.connect(_on_resume_pressed)
+	pause_box.add_child(resume_btn)
+	var pause_restart := _make_button("重开本关", Color(0.35, 0.3, 0.2))
+	pause_restart.custom_minimum_size = Vector2(480, 120)
+	pause_restart.pressed.connect(func() -> void:
+		_pause_overlay.visible = false
+		if controller != null:
+			controller.set_paused(false)
+		restart_requested.emit())
+	pause_box.add_child(pause_restart)
+	var pause_back := _make_button("返回列表", Color(0.3, 0.3, 0.36))
+	pause_back.custom_minimum_size = Vector2(480, 120)
+	pause_back.pressed.connect(func() -> void:
+		_pause_overlay.visible = false
+		if controller != null:
+			controller.set_paused(false)
+		back_requested.emit())
+	pause_box.add_child(pause_back)
 
 
 func _make_button(text: String, color: Color) -> Button:
@@ -492,6 +544,10 @@ func slot_screen_center(index: int) -> Vector2:
 
 # 炮管瞄准（CQ/S06 §4）：有在途票据→朝目标体素屏幕投影；否则朝模型中心投影
 func _process(_delta: float) -> void:
+	# FM/F4：事件触发的刷新合并为每帧至多一次（绑定事件仅置脏标）
+	if _refresh_dirty:
+		_refresh_dirty = false
+		refresh()
 	# CQ/S08 §5：5 秒无进展提示（暂停/非 RUNNING 不计时，有进展即清零）
 	if controller != null and controller.session != null and visible \
 			and controller.session.outcome == "RUNNING" and not controller._paused:
@@ -513,13 +569,34 @@ func _process(_delta: float) -> void:
 		if tid < 0:
 			continue
 		var target_world := center_world
-		var ticket: Dictionary = controller.shot_ledger.ticket_by_turret(tid)
+		# FM/F2：多球在途——炮管瞄准最新一颗的目标
+		var ticket: Dictionary = controller.shot_ledger.latest_ticket_by_turret(tid)
 		if not ticket.is_empty():
 			var vid := int(ticket.target_voxel_id)
 			if controller.voxel_manager.is_alive(vid):
 				target_world = wfg * (controller.voxel_manager.data.positions[vid] + Vector3(0.5, 0.5, 0.5))
 		var screen := camera.unproject_position(target_world)
 		cv.set_aim_dir(screen - cv.get_global_rect().get_center())
+
+
+# FM/F4：暂停只在 RUNNING 局内生效（结算遮罩已覆盖终局）；恢复走 _paused 门，不补发不补转
+func _on_pause_pressed() -> void:
+	if controller == null or controller.session == null \
+			or controller.session.outcome != "RUNNING" or controller._paused:
+		return
+	controller.set_paused(true)
+	_pause_overlay.visible = true
+
+
+func _on_resume_pressed() -> void:
+	_pause_overlay.visible = false
+	if controller != null:
+		controller.set_paused(false)
+
+
+# main 退后台恢复时避免冲掉用户手动暂停
+func is_pause_overlay_visible() -> bool:
+	return _pause_overlay != null and _pause_overlay.visible
 
 
 func _on_fire_feedback(args: Array, _m: Dictionary) -> void:

@@ -367,3 +367,104 @@
 已完成（转向前）：APK 0.3.2/code5（SHA256 a2999d4b…57f8）装 Pixel 7a；旋转压力下暴露持续 7.5fps 死亡螺旋（p95 140ms+，物理追帧放大）；cq_verify 复跑 VERIFY_PASS（seed=4 actions=4229，扫描共享几何改动后仍成立）。
 进行中：PerfProbe 子系统耗时探针已入代码（find_target/ball_step/hud_refresh/spawn_burst/mm_remove/scheduler_tick，5s 窗写 perf_log.jsonl probe 字段），用于在 Mac 定位旋转后扫帧尖刺的真实元凶。
 下一步：Mac 窗口复现旋转压力场景 → 读 probe 分布 → 对症修复 → 15 套件 + cq_verify 回归。
+
+## FM / F1 进行中——局部锁定弹道 + mismatch 风暴根因修复（CLAUDE 执行，2026-10-26）
+任务：docs/tasks/2026-10-26-fast-moving-target-clear-plan.md F0~F1。
+前置步骤及证据：F0 基线 reports/desktop/fm/f0-baseline.md（14/15，test_auto_fire 3 个 ball_speed=40 遗留失败）；存档目录注入 LevelRepository.set_save_dir + 全部测试隔离 user://test_saves/<name>_<pid>。
+本轮修改文件与作用：
+- F1 局部空间弹道：projectile_system.gd 重写（球记录 local_pos/local_dir，step 纯局部推进，spawn_local，erase_ball 即回收+有界 _ended_log）；ball_physics.gd 门面按本步 wfg 投影事件；game_controller._fire_at 改用 origin_grid 局部出膛方向；voxel_model_node.set_orientation 唯一姿态写入口+transform_version；marble_presenter 按当前 wfg×local_pos 投影。
+- **mismatch 风暴根因**（tools/debug_refund_storm.gd：18 HIT/94 mismatch → 修复后 80 HIT/0 mismatch/80 发打空离场）：voxel_spatial_index._dda_cells 用 `signi(d.x)` 取浮点方向符号，signi 先把 float 截断成 int——步长分量 |d|<1 时全部归 0，step=(0,0,0)，DDA 空转到 4096 守卫返回起点格副本，候选只剩起点格 27 邻域；高速（speed40 步长 0.667）球贴近格边界起飞时，进入目标格的那一步候选漏掉目标 → 球停进预订目标扩张盒内 → start-inside 规则永久不可命中 → 蹭到邻格扩张盒 mismatch 返还 → 重发风暴（fires=281）。低速（speed12 步长 0.2）时起点格邻域足以覆盖，缺陷被掩盖。同类缺陷同步修复：target_selector._los_blocked、tools/cq_verify._los_blocked 共 3 处改 `int(signf(...))`。
+- 回归：test_ball 新增"亚单位步长候选含终点邻格体素/进入扩张盒的那一步即命中"夹具（精确复现失败段 (10.818,2.9996,8.5)→(10.680,3.6517,8.5)）；test_designated "点空处" 改为指向模型外向下 -200（修复后 pick 是全程真实扫掠，向上 200 真穿模型命中——旧断言依赖缺陷）。
+实际命令、退出码、设备、构建标识：桌面 headless godot 4.7.2；debug_refund_storm 修复后 ammo0=80 fires=80 HIT×80 alive=4025 炮台离场；15/15 套件全绿。
+测试：15/15 PASS（桌面 headless）。
+颜色守恒统计：修复路径不改计数语义；test_auto_fire 守恒审计（Q+S+F=V、V≤V0）绿。
+未解决问题与修复计划：test_local_ballistics.gd（FM01-04 门禁：飞行中旋转/俯仰/平移仍中预订目标）未建。
+下一步：建 tests/integration/test_local_ballistics.gd → F1 门禁 → F2 多球连发。
+
+## FM / F2 完成——多球连发 + 选靶扫描修复 + 发射统计 + 自动旋转（CLAUDE 执行，2026-10-26）
+任务：docs/tasks/2026-10-26-fast-moving-target-clear-plan.md F2（FM05~FM10）+ §11 自动旋转机制。
+前置步骤及证据：F1 完成（18 套件含 test_local_ballistics 门禁全绿；mismatch 风暴根因=DDA signi 截断，已修）。
+本轮修改文件与作用：
+- 配置：game_rules.gd 新增 max_in_flight_per_turret=6/max_active_projectiles=30/auto_rot_deg_per_sec=8.0，auto_fire_interval→0.10，ball_speed→100.0（格/秒）；from_rules 解析新键；level_01.json 同步。
+- 多球：try_auto_fire 闸门 in_flight>=1 → max_in_flight_per_turret（reason in_flight_cap）+ 全局 global_cap；auto_fire_scheduler 白名单加 in_flight_cap/global_cap，scan_pending/waiting_target 冷却置 0（下一物理步续扫，§5.3），成功冷却相位保留 clamp（防低帧率爆发也防拖慢）；shot_ledger 加 latest_ticket_by_turret（HUD 炮管瞄准已迁移）+ pending_count_by_turret。
+- §6 原子命中提交：_on_ball_hit 重排 校验→destroy→成功才 settle_hit/事件；destroy 失败发 integrity_error（不静默退款）；删后断言 renderer.instance_count==alive_count；_refund_ticket 先看 settle_cancel.changed 幂等（多球乱序/重放不再重复加弹）。
+- target_selector：预算检查移到内层循环每次迭代顶部（覆盖三条 continue 路径）；断点改 {start,k,ii} 整桶扫完才推进（修 §2.1 续扫跳过半扫桶漏扫）；ckey floori；负缓存 gen+tver 双匹配 + set_transform_version 每步注入；持续旋转负缓存不服务，改有界轮转学标 _rr_cursor（同 tver 完整扫完才许写负缓存）；缓存 256 有界裁剪；scan_budget_us 可注入 + dbg_neg_served 观测点。
+- §11 自动旋转：game_controller.step 顶部 _apply_auto_rotation（选靶/推进前，每步至多一次 tver 递增）；+Y 正角=俯视逆时针；set_rotation_hold 由 main 模型区按下/释放/cancel_all/退后台/失焦注入；0.2s 渐入接续不回弹；指定目标选择中暂停；macOS 失焦只清手势不暂停；auto_rot_speed_deg 读数接口。
+- 统计：新建 fire_stats.gd（attempt/success/hit/cancel 分类/waiting/scan_pending/10s 滚动每秒消除/飞行时长/等待占比/有效局时时钟）；perf_monitor stats_provider 合入 perf_log.jsonl；main.gd 接线。
+- 关键发现（影响验收理解）：实体模型单炮只能消当前逼近壳上的同色块，壳耗尽即饿死——roguelike 式推进依赖多色炮台轮换暴露内部块；grid_300 单炮 6~9 发后永久 starving 属【正确玩法语义】。FM05 改用单色薄板夹具 assets/models/json/plate_300.json + tests/fixtures/level_fm05.json（注意 level_catalog MODEL_PREFIX 白名单只收 res://assets/models/json/）。
+- 测试原点契约修正：三处 _aim_for 改为【世界空间固定原点，每次调用按当前 wfg 回算格原点】（真机语义：炮口世界不动、模型在下旋转，旋转才暴露新目标）；正下方原点位于旋转轴上永不移动是测试假象。
+- 测试：新建 test_multi_ball.gd（FM05 grid_300/plate 夹具实测 10.11/s ≥ 9/s 门槛、80 发 7.92s 打空、零取消；FM06 三炮并发峰值在途 10 + 任意时刻 pending==reservations；FM07 后发先结算；FM08 命中/取消重放零二次副作用+守恒绿）；新建 test_selector_scan.gd（1µs 预算切片结果==全量、否定全扫 1132 切片覆盖 870 前沿、gen+tver 负缓存失效、轮转推进）；test_auto_fire 加多球峰值在途≥2 断言；test_local_ballistics 适配 waiting_target 续扫语义。
+实际命令、退出码、设备、构建标识：桌面 headless godot 4.7.2；18/18 套件全绿（含两个新套件）。
+测试：18/18 PASS（桌面 headless）。
+颜色守恒统计：test_multi_ball FM05/FM07/FM08 守恒审计绿；test_auto_fire 守恒断言绿。
+未解决问题与修复计划：取回流程仍在（F3 移除）；cq_verify 仍含 return 步（F3 重解）；自动旋转真机/窗口目视与 test_auto_rotation.gd 探针未建（F5/FM17-18）。
+下一步：F3——删 HUD 取回按钮/模式/分支 + 控制器 return_turret/_do_return_to_column/_settle_return_pending + STATE_RETURN_PENDING/push_front，rules_version→3 状态白名单，cq_verify 去 return 重找种子。
+
+## FM / F3 完成——取回流程：先移除后按用户决定保留 + 无取回可解性已证（CLAUDE 执行，2026-10-26）
+任务：docs/tasks/2026-10-26-fast-moving-target-clear-plan.md F3。
+前置步骤及证据：F2 完成（18/18 绿）。
+本轮经过：
+1. 按 F3 计划移除取回：HUD 按钮/模式/分支、控制器 return_turret/_do_return_to_column/_settle_return_pending、CannonQueue.STATE_RETURN_PENDING/push_front、rules_version→3+状态白名单、测试改造。
+2. test_play 无取回驾驶死局（grid_300，alive=72/209/228 三次）→ tools/probe_stuck.gd 探针定位：可达窗口窄至 15° 量级（c4/c1 在 yaw15/pitch-60），离散朝向跳变系统性漏扫；c5 块被 c3 包围需间接暴露（正确玩法语义）。
+3. **驾驶模型重写为世界固定炮口 + 模型自动旋转连续环绕**（真机验收配置）：格空间原点随 8°/s 自动旋转连续环绕模型，无进展只切炮口高度/方位（5 候选）。结果：6483 步=108s 全清 300 块，零取回，守恒绿。
+4. **用户决定（2026-10-26）："为了测试方便，保留取回功能吧"** → 取回流程全部恢复（HUD/控制器/队列/测试），rules_version 回滚维持 2，状态白名单保留（含 RETURN_PENDING 合法、BOGUS 拒绝）；cq_verify 保留"无取回"更严格规则。
+本轮修改文件与作用：
+- 恢复：game_controller.gd（return_turret/_do_return_to_column/_settle_return_pending + _settle_ticket 收尾调用）、hud_presenter.gd（按钮/模式/toggle/状态映射）、cannon_queue_service.gd（STATE_RETURN_PENDING/push_front）、test_presentation/test_auto_fire 取回用例。
+- 保留：VALID_TURRET_STATES 白名单校验（新增 BOGUS 拒绝用例 + RETURN_PENDING 恢复通过用例）。
+- test_play.gd：_aim_for 改世界固定炮口（5 候选高度/方位），删除格空间方向跳变 _apply_orientation；_drive 无取回（停泊用满最后一槽 + add_slot）；死局诊断 _diag（槽位/队列/fire_stats）；步数上限 300000。
+- cq_verify.gd：删除 return 操作（块4），死局=仅旋转、全周无进展=拒种；注释注明"验证器刻意更严格，游戏内取回保留"。
+实际命令、退出码、设备、构建标识：桌面 headless godot 4.7.2；cq_verify `godot --headless --path . -s tools/cq_verify.gd -- 1 200` 首种即过。
+测试：全套件绿（test_play/test_presentation/test_auto_fire/test_persistence + 全部 unit/integration）。
+**无取回可解性证据（FM12 核心交付物）**：cq_verify 无取回 VERIFY_PASS seed=4（与 level_01.json 现 queue_seed 一致，无需改关卡）；s03-solution.json=4175 动作（fire×4105 恰好一块一发、place×50、park×3、rotate×17、**return×0**）。
+颜色守恒统计：test_play 终局 Q+S+F=V=0 逐色绿；cq_verify 生成守恒报告绿。
+未解决问题与修复计划：无（F3 门禁达成：cq_verify 无 return PASS + test_play 无 return 通关 grid_300）。
+下一步：F4 剩余缺陷合并——initial_slots 应用（level_session:21）、speed_x2 already_pending 守卫、shuffle 每列≥2 守卫+单测、原子恢复（纯 validate_snapshot：alive 去重/范围、next_turret_id、锁槽 -1、V+D=V0 重算）、RNG 十进制字符串往返、HUD 同帧合并刷新、胜利校验加 active_balls==0&&renderer==0、运行中暂停按钮、交付前 PerfProbe ENABLED=false。
+
+## FM / F4 完成——剩余缺陷合并（CLAUDE 执行，2026-10-26）
+任务：docs/tasks/2026-10-26-fast-moving-target-clear-plan.md F4（计划 F4.1~F4.8；PerfProbe 关闭留待 F5 交付构建前）。
+前置步骤及证据：F3 完成（取回按用户决定保留 + 无取回可解性 cq_verify PASS seed=4）。
+本轮修改文件与作用：
+- game_controller.gd：新局 unlocked_slots=clampi(rules.initial_slots,1,max_slots)（initial_slots 死配置激活）；_evaluate_outcome 传入 renderer.instance_count()；原子恢复接线——start_level 恢复前纯校验 validate_snapshot（含 VALID_TURRET_STATES 白名单/调色板/color_of 回调），旧 _validate_restored 删除（迁入纯函数）。
+- level_session.gd：rng_seed/rng_state 十进制字符串往返 + _u64_from_json 兼容旧 number；新增静态 validate_snapshot（版本/归属、alive 去重+范围 [0,model_count)、turret id/键一致+状态白名单+origin_column 0-4+颜色合法、next_turret_id>max、队列/槽引用存在且唯一、锁槽必须 -1、槽位 <max_slots、逐色守恒 Q+S==V 用 color_of 重算）。
+- outcome_state.gd：胜利判据加 active_balls==0 && renderer_instances==0（默认 -1=跳过，不破坏既有调用）；存活归零但实例未归零 → outcome=ERROR + integrity_error(renderer_desync)。
+- prop_service.gd：speed_x2 已待发守卫 already_pending 不扣次数。
+- cannon_queue_service.gd：shuffle 可洗前提从"总数<2"收紧为"至少一列≥2"（每列≤1 门时洗牌无意义，此前白扣次数）。
+- hud_presenter.gd：事件订阅改置 _refresh_dirty 脏标，_process 每帧至多合并 refresh 一次（用户直接操作仍即时）；运行中暂停按钮 + 暂停遮罩（继续/重开本关/返回列表，走 _paused 门，仅 RUNNING 可暂停）；is_pause_overlay_visible 供 main 后台恢复不冲掉手动暂停；main.gd APPLICATION_RESUMED 加遮罩守卫。
+- 测试：test_gameplay 加 shuffle 每列≤1 拒绝不扣 + speed_x2 已待发拒绝不扣；test_persistence 加大 rng_state（>2^53）JSON 往返无精度损失 + 恢复后 16 个 randi 序列一致 + 旧档 number 兼容；test_cannon_queue shuffle 夹具改 {1:300,4:270}（抽屉原理保证一列≥2，匹配收紧后可洗前提）。
+实际命令、退出码、设备、构建标识：桌面 headless godot 4.7.2；逐套件 `godot --headless --path . -s <test>` 全 exit=0。
+测试：18/18 PASS（桌面 headless，含 test_play 6483 步=108s 全清 grid_300 复跑通过；日志 reports/desktop/fm/f4/test_play.log）。
+颜色守恒统计：test_play/test_auto_fire/test_multi_ball 守恒断言全绿（本轮未改动守恒路径）。
+未解决问题与修复计划：HUD 合并刷新的"≤1 次/帧"PerfProbe 实测证明、PerfProbe ENABLED=false 交付开关，均在 F5 调参/构建阶段完成。
+下一步：F5 macOS App 验收——export preset + .app 构建 + 可执行 SHA256 + build-info.md；tools/replay_runner.gd 实时回放 s03-solution.json；FM01~FM20 证据矩阵；节奏调优环（ball_speed 100-140/interval 0.08-0.12/max_in_flight 6-8 → 210~240s 有效局时）；cliclick+screencapture 关键帧；30 轮生命周期；新建 test_auto_rotation.gd 探针。
+
+## FM / F5 完成——macOS App 验收与交付构建（CLAUDE 执行，2026-10-27）
+任务：docs/tasks/2026-10-26-fast-moving-target-clear-plan.md F5（计划 F5.1~F5.5：构建/回放器/FM 矩阵/节奏调优/输入证据）。
+前置步骤及证据：F4 完成（18/18 绿 + 全部缺陷合并）；基线 git 31417c5。
+本轮修改文件与作用：
+- auto_fire_scheduler.gd：waiting_target 冷却 0→0.25s（WAIT_RETRY_SEC，8°/s 下仅转 2° 不损机会粒度，扫描量降 ~15×）；scan_pending 仍 0 冷却即续。
+- target_selector.gd：负缓存服务条件 gen+tver 双匹配 → gen+ckey（ckey=原点 2 格量化，floori）；扫描锚定 origin0/ckey0（多片扫描原点逐片漂移曾产出混合原点伪否定，锚定后消除）；_rr_cursor 轮转保持。
+- main.gd：perf 日志隔离（is_isolated 时写隔离目录，修并发测试清真机采样竞态）；装配 replay_runner。
+- replay_runner.gd（新）：CLI --replay/--replay-report/--replay-max-sec；place/park 按解列序驱动公开 API（place_front），fire 交自动连发、rotate 交自动旋转；5s JSONL 进度；报告含 pacing/fire_stats/守恒/渲染残留；结算屏停 5s 供关键帧。
+- test_auto_rotation.gd（新，FM17/18）：俯视探针 CCW 符号+速率（10s≈79.2°）、30/60/120Hz 角位移一致（pairwise≤0.5°）、按住冻结/松手无跳角、指定选择/暂停冻结、tver +1/步、enabled=false 全停（PhiTracker 首点锚定修复）。
+- tools/lifecycle_check.gd（新，FM14）：30 轮进关→游玩→返回列表，代际/存档/隔离校验。
+- export_presets.cfg：[preset.1] macOS（universal runnable）；level_01.json 调优落点 ball_speed=120/interval=0.09。
+- 交付构建：perf_probe.gd ENABLED=false（唯一与 run-1/2/3 二进制的源码差异）。
+实际命令、退出码、设备、构建标识：`godot --headless --path . --export-release "macOS"` exit=0；最终 .app SHA256 b7d946af…4295（build-info.md）；实机 macOS 15.7.9 i7-8700B/UHD630，540×1200 窗口。
+测试：最终源码全套件 19/19 PASS；lifecycle 30 轮 TEST_PASS；真档 shasum 前后不变（FM16）。
+**真机回放四连 WON（自动旋转 8°/s 全开）**：221.3s / 215.9s / 236.8s（探针构建）+ **210.8s**（最终交付构建 run-4）——全部 ≤300s 且 210~240 目标带内；每局 4105/4105 命中、mismatch cancel 2/5/9/3（≤0.22%）、守恒绿、alive=0、renderer=0、op_mismatches=0。
+FM14 性能（run-4 perf_log + run-5 RSS）：FPS min53.4/avg75.4；p95 max29.8ms；RSS 峰值 291.8MB、最差 60s 增长 +4.7% 趋平。（mem_static_mb 全 0 为 macOS 导出 API 缺口，已用 ps RSS 外部佐证。）
+关键帧：t000/060/120/180 + r3_pre/mid/post_drag（cliclick 实拖朝向可见变化）+ r4_win_1..6（通关屏）。
+节奏根因记录：持续旋转下 tver 每步递增 → 负缓存永不服务 → 饥饿炮全量重扫（实测 wait_ratio 0.889/scan_pending 20250）；修复=WAIT_RETRY_SEC + 锚定扫描原点 + ckey 负缓存。
+未解决问题与修复计划：人工项（UI 实玩计时/后台重开/合成指定滚动）NOT_RUN 留用户确认；wait_ratio 0.57~0.73 偏高但 pacing 已达标，不继续优化。
+下一步：FM 任务全部完成，交付物齐（fm-matrix.md / build-info.md / 四份回放报告 / perf_log_run4.jsonl / 关键帧）。等用户实玩确认人工项后可提交 git。
+
+## 用户调整：去掉槽位锁 + 手机比例窗口（2026-10-27）
+任务：用户两条指令——① 去掉锁；② 窗口大小用手机屏幕的窗口大小。
+本轮修改文件与作用：
+- assets/levels/level_01.json：rules.initial_slots 3→5（5 槽全解锁，"锁"消失）；initial_props 移除 add_slot（全解锁后该道具无意义；HUD refresh 对 count=0 道具按钮自动隐藏，界面无死按钮）。
+- scripts/data/game_rules.gd：默认 initial_slots 3→5、默认 initial_props 同步移除 add_slot。prop_service 仍保留 add_slot 实现（test_gameplay 满槽拒绝用例依赖）。
+- project.godot：窗口 window_width_override=540 / window_height_override=1200（9:20 手机竖屏）、resizable=false、stretch aspect expand→keep（修复 1080×2400 视口被 macOS 夹成 1080×1366 近方形后 expand 横向扩边的问题）。
+实际命令、退出码、设备、构建标识：`godot --headless --path . --export-release "macOS"` exit=0；新 .app SHA256 53abd9ae9bf097dac7cfb80a3ac8c399999cd9f75b5a58575ea333d7fcbe8d60。
+测试：全套件 19/19 PASS（桌面 headless）；真机目检：窗口 540×1228（含标题栏）、槽位行 3 占用+2 空、无"锁"、道具行无"加槽"、存档正常恢复续玩。
+未解决问题与修复计划：无。replay_runner 开局的 use_prop("add_slot") 现在会返回失败并记录在报告 meta（无害，5 槽开局节奏只会更好）。
+下一步：等用户实玩确认（此前 FM 人工项：UI 实玩计时/后台重开/合成指定滚动）后提交 git。

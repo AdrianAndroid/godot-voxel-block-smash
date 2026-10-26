@@ -44,7 +44,7 @@ func _initialize() -> void:
 	ps.radius = 0.35
 	ps.boundary_center = Vector3(5, 5, 5)
 	ps.boundary_half = 100.0
-	var bid: int = ps.spawn(Vector3(5, 5.5, 5.5), Vector3(-12, 0, 0), 1)
+	var bid: int = ps.spawn_local(Vector3(5, 5.5, 5.5), Vector3(-1, 0, 0), 12.0, 1)
 	var res: RefCounted = ps.step(0.5, Transform3D.IDENTITY, candidates_of, grid_pos_of)
 	_check(res.hits.size() == 1, "大步长不穿透(命中1次)", str(res.hits))
 	var b: Dictionary = ps.ball_snapshot(bid)
@@ -55,27 +55,46 @@ func _initialize() -> void:
 	ps2.radius = 0.35
 	ps2.boundary_center = Vector3.ZERO
 	ps2.boundary_half = 5.0
-	var bid2: int = ps2.spawn(Vector3(0, 0, 0), Vector3(60, 0, 0), 2)
+	var bid2: int = ps2.spawn_local(Vector3(0, 0, 0), Vector3(1, 0, 0), 60.0, 2)
 	var ended_total := 0
 	for i in 10:
 		var r2: RefCounted = ps2.step(0.1, Transform3D.IDENTITY, candidates_of, grid_pos_of)
 		ended_total += r2.ended.size()
 	_check(ended_total == 1, "出界只提交一次", "ended=%d" % ended_total)
 
-	# 旋转模型：格空间绕Y转90°，世界球朝 -z 飞（对应格空间 -x 方向墙）
+	# FM §4 局部锁定弹道：飞行途中模型变换改变（旋转90°），球仍沿局部轨迹命中同一面墙；
+	# 事件点/法线为格空间，世界投影由门面按本步变换完成。
 	var rot := Transform3D(Basis(Vector3.UP, PI / 2), Vector3.ZERO)
 	var ps3 := preload("res://scripts/projectile/projectile_system.gd").new()
 	ps3.radius = 0.35
 	ps3.boundary_center = Vector3(5, 5, 5)
 	ps3.boundary_half = 100.0
-	var world_pos: Vector3 = rot * Vector3(5, 5.5, 5.5)
-	var world_vel: Vector3 = rot.basis * Vector3(-12, 0, 0)
-	var bid3: int = ps3.spawn(world_pos, world_vel, 3)
-	var res3: RefCounted = ps3.step(0.5, rot, candidates_of, grid_pos_of)
-	_check(res3.hits.size() == 1, "旋转模型下命中", str(res3.hits))
+	var bid3: int = ps3.spawn_local(Vector3(5, 5.5, 5.5), Vector3(-1, 0, 0), 12.0, 3)
+	ps3.step(0.1, Transform3D.IDENTITY, candidates_of, grid_pos_of)  # 先以 Identity 飞一段
+	var res3: RefCounted = ps3.step(0.5, rot, candidates_of, grid_pos_of)  # 中途换成旋转90°变换
+	_check(res3.hits.size() == 1, "飞行中变换切换仍命中（局部锁定）", str(res3.hits))
 	if res3.hits.size() == 1:
-		var wn: Vector3 = res3.hits[0].normal
-		_check(wn.is_equal_approx((rot.basis * Vector3(1, 0, 0)).normalized()), "旋转后世界法线正确", str(wn))
+		_check(res3.hits[0].normal == Vector3(1, 0, 0), "命中法线为格空间（+x墙法线）",
+			str(res3.hits[0].normal))
+		# 快照世界投影用本步变换：反弹点在格空间 x≈1.35+ε
+		var snap3: Dictionary = ps3.ball_snapshot(bid3)
+		var expect_w: Vector3 = rot * (snap3.local_pos as Vector3)
+		_check((snap3.pos as Vector3).is_equal_approx(expect_w), "快照世界位置=本步变换×局部坐标",
+			"%s vs %s" % [str(snap3.pos), str(expect_w)])
+
+	# FM/F1 回归：DDA signi 浮点截断缺陷——步长分量全 <1 时 step=(0,0,0) 空转，
+	# 候选只剩起点格邻域，球进入目标格扩张盒却漏扫（mismatch 退款风暴根源）。
+	# 夹具：起点贴近格边界、步长 0.667（speed40×1/60）、目标在终点格上方邻格。
+	var idx2 := index_script.new()
+	idx2._cell[index_script.pack_v(Vector3i(10, 4, 8))] = 1180
+	idx2._cell[index_script.pack_v(Vector3i(10, 2, 8))] = 2000  # 起点格占位（无关体素）
+	var seg_p0 := Vector3(10.81827, 2.999588, 8.5)
+	var seg_p1 := Vector3(10.67993, 3.651744, 8.5)  # 终点已进入 (10,4,8) 半径0.35扩张盒
+	var cands2: Array = idx2.candidates_along_segment(seg_p0, seg_p1, 0.35)
+	_check(cands2.has(1180), "亚单位步长候选含终点邻格体素", str(cands2))
+	var hit2: Dictionary = solver.sweep(seg_p0, seg_p1, 0.35, cands2,
+		func(id: int) -> Vector3: return Vector3(10, 4, 8) if id == 1180 else Vector3(10, 2, 8))
+	_check(hit2.hit and int(hit2.voxel_id) == 1180, "进入扩张盒的那一步即命中", str(hit2))
 
 	if _failures == 0:
 		print("TEST_PASS test_ball")

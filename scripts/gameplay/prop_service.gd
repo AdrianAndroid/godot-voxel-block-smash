@@ -30,6 +30,9 @@ func use(session: RefCounted, rules: RefCounted, prop: String,
 		return {"ok": false, "reason": "empty"}  # 次数不为负（G13）
 	match prop:
 		"speed_x2":
+			# FM/F4：已待发时不重复扣次（双击/连点守卫）
+			if bool(session.pending_effects.get("speed_x2", false)):
+				return {"ok": false, "reason": "already_pending"}
 			session.pending_effects.speed_x2 = true   # 仅下一发（G08/D04）
 		"designated_target":
 			# CQ/S08：只进入选择模式，本步不扣次；合法选择被接受时由控制器扣次

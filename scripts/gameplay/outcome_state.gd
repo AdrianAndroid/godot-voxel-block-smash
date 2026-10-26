@@ -21,12 +21,20 @@ func setup(bus: RefCounted) -> void:
 
 
 func evaluate(session: RefCounted, alive_count: int, active_balls: int,
-		pending_tickets: int, level_id: String, meta: Dictionary) -> String:
+		pending_tickets: int, level_id: String, meta: Dictionary,
+		renderer_instances: int = -1) -> String:
 	if _settled or session.outcome != "RUNNING":
 		return session.outcome
 	if alive_count == 0:
-		if pending_tickets > 0:
-			return session.outcome  # S08 §4：还有未结算票据，等结算后才判胜
+		# S08 §4：还有未结算票据/在途球，等结算后才判胜
+		if pending_tickets > 0 or active_balls > 0:
+			return session.outcome
+		# FM/F4：渲染实例必须与存活同步——存活归零但实例未归零 = state/renderer 分叉
+		if renderer_instances > 0:
+			session.outcome = "ERROR"
+			_settled = true
+			_bus.publish("integrity_error", [level_id, "renderer_desync", renderer_instances], meta)
+			return session.outcome
 		session.outcome = "WON"
 		_settled = true
 		_bus.publish("level_win", [level_id], meta)

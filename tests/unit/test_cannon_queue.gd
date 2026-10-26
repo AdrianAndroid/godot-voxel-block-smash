@@ -108,7 +108,8 @@ func _test_reproducible() -> void:
 
 
 func _test_shuffle() -> void:
-	var counts := {1: 100, 4: 90}
+	# FM/F4：可洗前提收紧为"至少一列≥2 门"，用足量炮台保证抽屉原理必有一列≥2
+	var counts := {1: 300, 4: 270}
 	var session := SessionScript.new()
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 5

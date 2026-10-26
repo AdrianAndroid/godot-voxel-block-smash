@@ -23,6 +23,7 @@ const LevelRepositoryScript := preload("res://scripts/level/level_repository.gd"
 const AutoFireSchedulerScript := preload("res://scripts/gameplay/auto_fire_scheduler.gd")
 const TargetSelectorScript := preload("res://scripts/gameplay/target_selector.gd")
 const ShotLedgerScript := preload("res://scripts/gameplay/shot_ledger.gd")
+const FireStatsScript := preload("res://scripts/gameplay/fire_stats.gd")
 
 const SHOT_TIMEOUT_SEC := 3.0  # CQ §2.3：在途弹超时取消返还（设计默认 3s）
 
@@ -39,6 +40,7 @@ var outcome_state: RefCounted
 var auto_fire: RefCounted       # AutoFireScheduler
 var target_selector: RefCounted  # CQ-20261026/S05
 var shot_ledger: RefCounted      # CQ-20261026/S05
+var fire_stats: RefCounted       # FM/F2：发射统计（验收证据；start_level 时重建）
 var origin_resolver := Callable()  # func(slot_index) -> {ok,origin,origin_grid|reason}，表现层注入
 
 var _level_loader: RefCounted
@@ -111,6 +113,7 @@ func start_level(level_config_path: String, restore_snapshot: Dictionary = {}) -
 	outcome_state = OutcomeStateScript.new()
 	outcome_state.setup(bus)
 	shot_ledger = ShotLedgerScript.new()
+	fire_stats = FireStatsScript.new()  # FM/F2：发射/命中/取消/等待统计（验收证据）
 	# CQ-20261026/S05：命中/取消统一由控制器按票据结算（替代旧 HitResolver 异色反弹）
 	bus.subscribe("ball_hit_voxel", _on_ball_hit, session.level_id)
 	bus.subscribe("ball_out_of_bounds", _on_ball_out_of_bounds, session.level_id)
@@ -122,6 +125,12 @@ func start_level(level_config_path: String, restore_snapshot: Dictionary = {}) -
 	# CQ/S09：模型内容哈希（位置+颜色），存档与恢复一致性校验用
 	var model_hash := _hash_model(data)
 	if not restore_snapshot.is_empty():
+		# FM/F4：原子恢复——先纯校验（引用/守恒/状态白名单/范围）后 mutate，坏档不产生半步状态
+		var validation := LevelSessionScript.validate_snapshot(restore_snapshot, session.level_id,
+			data.count, func(vid: int) -> int: return voxel_manager.color_of(vid),
+			rules.palette_color_ids, VALID_TURRET_STATES, rules.max_slots)
+		if not validation.get("ok", false):
+			return {"ok": false, "error": "snapshot_invalid: %s" % str(validation.get("error", ""))}
 		if not session.restore(restore_snapshot):
 			return {"ok": false, "error": "snapshot_rejected"}
 		# CQ/S09 §4：模型/规则版本变更 → 不静默迁移，由调用方备份旧档并重开
@@ -131,10 +140,6 @@ func start_level(level_config_path: String, restore_snapshot: Dictionary = {}) -
 			return {"ok": false, "error": "rules_version_changed"}
 		# 恢复后保留本次运行代号，不被历史存档代号覆盖
 		session.session_generation = _generation
-		# CQ/S09 §1：加载校验——ID 归属/颜色/每色守恒（无效色=坏档，拒绝而不静默迁移）
-		var validation := _validate_restored()
-		if not validation.get("ok", false):
-			return {"ok": false, "error": "snapshot_invalid: %s" % str(validation.get("error", ""))}
 		# 恢复 RNG 完整状态：同一随机序列继续（不重置为种子起点）
 		_rng = RandomNumberGenerator.new()
 		_rng.seed = session.rng_seed
@@ -162,6 +167,8 @@ func start_level(level_config_path: String, restore_snapshot: Dictionary = {}) -
 		session.session_generation = _generation
 		session.prop_counts = rules.initial_props.duplicate()
 		SlotService.init_slots(session)  # CQ-20261026/S04：固定五槽 -1 空位
+		# FM/F4：initial_slots 配置生效（此前硬编码 3，配置为死参数）
+		session.unlocked_slots = clampi(rules.initial_slots, 1, rules.max_slots)
 		PoolService.generate(session, weights, _rng)  # CQ 五列守恒队列
 		session.alive_voxel_ids = range(data.count).duplicate()
 
@@ -208,6 +215,7 @@ func place_front(column_id: int) -> Dictionary:
 
 # 取回：允许取回"没有在途弹"的炮台（即使发射过）；有在途弹先停新发射，结算后取回。
 # 取回到来源列队首、保留当前弹数。
+# 注：FM 2026-10-26 任务 §7 原要求移除取回；用户同日决定保留以便测试。
 func return_turret(slot_index: int) -> Dictionary:
 	if session.outcome != "RUNNING":
 		return {"ok": false, "reason": "not_running"}
@@ -266,8 +274,10 @@ func try_auto_fire(slot_index: int) -> Dictionary:
 		return {"ok": false, "reason": "missing_turret"}
 	if int(t.ammo_remaining) <= 0:
 		return {"ok": false, "reason": "no_ammo"}
-	if int(t.get("in_flight", 0)) >= 1:
-		return {"ok": false, "reason": "in_flight"}  # CQ §2.2：每炮最多一颗在途
+	if int(t.get("in_flight", 0)) >= rules.max_in_flight_per_turret:
+		return {"ok": false, "reason": "in_flight_cap"}  # FM/F2：多球在途上限（替代单球闸门）
+	if ball_physics.system.active_count() >= rules.max_active_projectiles:
+		return {"ok": false, "reason": "global_cap"}  # FM/F2：全局在途弹性能护栏
 	if origin_resolver.is_null():
 		return {"ok": false, "reason": "no_origin_resolver"}
 	var o: Dictionary = origin_resolver.call(slot_index)
@@ -275,6 +285,7 @@ func try_auto_fire(slot_index: int) -> Dictionary:
 		return {"ok": false, "reason": "origin_%s" % str(o.get("reason", "failed"))}
 	# CQ/S08 §2.4：指定目标优先——仍有效（存活+未预订）且可达则锁定它；
 	# 失效则退出优先锁定（不退款已激活道具），恢复普通同色选靶。
+	fire_stats.on_attempt()
 	var _pt := PerfProbe.t0()
 	var target: Dictionary = _designated_target_for(t, o)
 	if target.is_empty():
@@ -285,7 +296,12 @@ func try_auto_fire(slot_index: int) -> Dictionary:
 		if t.state != PoolService.STATE_WAITING_TARGET:
 			t.state = PoolService.STATE_WAITING_TARGET
 			bus.publish("turret_state_changed", [tid, t.state], _meta())
-		return {"ok": false, "reason": "waiting_target"}
+		# FM/F2：scan_pending 透传给调度器（下一物理步续扫），其余归一为 waiting_target
+		var reason := str(target.get("reason", "waiting_target"))
+		if reason != "scan_pending":
+			reason = "waiting_target"
+		fire_stats.on_wait(reason)
+		return {"ok": false, "reason": reason}
 	return _fire_at(slot_index, tid, t, o, target)
 
 
@@ -297,13 +313,18 @@ func _fire_at(slot_index: int, tid: int, t: Dictionary, origin: Dictionary, targ
 		int(target.voxel_id), int(t.color_id), session.session_generation, speed_mod)
 	if not booked.get("ok", false):
 		return {"ok": false, "reason": "reserve_failed"}  # 被并发预订：下周期重试，不扣弹
+	# FM §4：模型局部格空间锁定弹道——出膛原点/方向都在格空间确定，
+	# 之后模型旋转只影响显示投影，不改变已锁定弹道（旋转中仍命中预订目标）。
 	var wfg: Transform3D = voxel_model.world_from_grid()
-	var target_world: Vector3 = wfg * target.target_grid_center
-	var dir: Vector3 = (target_world - origin.origin).normalized()
-	if dir.length_squared() < 0.5:
+	var local_origin: Vector3 = origin.get("origin_grid",
+		wfg.affine_inverse() * (origin.origin as Vector3))
+	var local_dir: Vector3 = (target.target_grid_center as Vector3) - local_origin
+	if local_dir.length_squared() < 0.25:
 		shot_ledger.settle_cancel(_shot_seq)
 		return {"ok": false, "reason": "bad_direction"}
-	var ball_id: int = ball_physics.spawn_ball(origin.origin, dir * rules.ball_speed * speed_mod,
+	local_dir = local_dir.normalized()
+	var ball_id: int = ball_physics.spawn_ball(local_origin, local_dir,
+		rules.ball_speed * speed_mod,  # ball_speed 语义 = 格/秒（voxel_size=1 时同世界单位）
 		_shot_seq, int(t.color_id), true)  # stop_on_hit：一发一块即回收（CQ/S08 已移除异色万能弹）
 	if ball_id <= 0:
 		shot_ledger.settle_cancel(_shot_seq)
@@ -321,6 +342,7 @@ func _fire_at(slot_index: int, tid: int, t: Dictionary, origin: Dictionary, targ
 		t.state = PoolService.STATE_FIRING
 	var fired_snapshot: Dictionary = t.duplicate(true)
 	fired_snapshot["target_voxel_id"] = int(target.voxel_id)
+	fire_stats.on_fire()
 	bus.publish("turret_fire", [fired_snapshot, ball_id], _meta())
 	_evaluate_outcome()
 	return {"ok": true, "ball_id": ball_id, "ammo_left": t.ammo_remaining,
@@ -429,17 +451,26 @@ func _on_ball_hit(args: Array, meta: Dictionary) -> void:
 	var vid := int(block.get("voxel_id", -1))
 	if vid == int(ticket.target_voxel_id) and voxel_manager.is_alive(vid) \
 			and int(block.get("color_id", -2)) == int(ticket.color_id):
-		shot_ledger.settle_hit(int(ticket.shot_id))
+		# FM §6 原子命中提交：校验（PENDING/代/预订归属/存活/同色/vid==预订，上面已完成）
+		# → destroy → 成功才 settle_hit/收尾/发事件；destroy 失败是完整性错误，不静默退款。
 		var res: Dictionary = voxel_manager.destroy(vid)
 		if res.get("ok", false):
+			shot_ledger.settle_hit(int(ticket.shot_id))
+			fire_stats.on_hit(float(ticket.get("age", -1.0)))
 			target_selector.on_voxel_destroyed(vid)
 			bus.publish("voxel_destroyed", [res.block, ball], _meta())
 			combo.on_destroy(_meta())
 			_settle_ticket(ticket, false)
+			# 删除三态同步断言：渲染实例数必须等于存活数（FM01 真删除验收）
+			if voxel_manager.renderer != null \
+					and voxel_manager.renderer.instance_count() != voxel_manager.alive_count():
+				bus.publish("integrity_error", ["renderer_desync",
+					voxel_manager.renderer.instance_count(), voxel_manager.alive_count()], _meta())
 			bus.publish("shot_resolved", [int(ticket.shot_id), "HIT", vid], _meta())
 		else:
-			# 理论不发生（目标有预订保护）；防御：删除失败按取消返还
-			_refund_ticket(ticket, "destroy_failed")
+			# 预订目标删除失败 = state/index/renderer 已分叉：报完整性错误，不返还不吞错
+			bus.publish("integrity_error", ["destroy_failed", vid, int(ticket.shot_id)], _meta())
+			push_error("integrity_error destroy_failed vid=%d shot=%d" % [vid, int(ticket.shot_id)])
 	else:
 		_refund_ticket(ticket, "mismatch")
 	_evaluate_outcome()
@@ -458,7 +489,12 @@ func _on_ball_out_of_bounds(args: Array, meta: Dictionary) -> void:
 
 # 取消返还：F-- S++（CQ §2.2）；归零炮台返还后恢复可发射
 func _refund_ticket(ticket: Dictionary, reason: String) -> void:
-	shot_ledger.settle_cancel(int(ticket.shot_id))
+	# FM/F2 多球幂等：先看 settle 是否真实转移——已结算票据（重放/双事件）直接返回，
+	# 不重复加弹（旧实现无条件 S++，多球乱序结算会超发弹药破坏守恒）
+	var st: Dictionary = shot_ledger.settle_cancel(int(ticket.shot_id))
+	if not st.get("changed", false):
+		return
+	fire_stats.on_cancel(reason, float(ticket.get("age", -1.0)))
 	var tid := int(ticket.turret_id)
 	var t: Dictionary = session.turrets.get(tid, {})
 	if not t.is_empty():
@@ -525,6 +561,47 @@ func set_paused(paused: bool) -> void:
 	_paused = paused
 
 
+# --- FM §11 自动旋转：青蛙绕模型中心固定世界 +Y 轴俯视逆时针缓慢持续旋转 ---
+# 手动按住拖动立即暂停（手动全胜）；松手从当前姿态 0.2s 渐入接续，不回弹不补转不清俯仰。
+# 指定目标选择中暂停；暂停/离场/结算由 is_running() 门天然冻结；无离线补转。
+
+var auto_rotate_enabled := true   # 验收默认开启；测试可关
+var _rotation_hold := false       # 模型区指针被手势路由持有（main 注入）
+var _auto_rot_ease := 0.0         # 松手渐入系数 0→1
+
+const AUTO_ROT_EASE_SEC := 0.2
+
+
+func set_rotation_hold(hold: bool) -> void:
+	_rotation_hold = hold
+
+
+func is_rotation_held() -> bool:
+	return _rotation_hold
+
+
+func _apply_auto_rotation(dt: float) -> void:
+	if not auto_rotate_enabled:
+		return
+	if _rotation_hold or bool(session.pending_effects.get("designated_selecting", false)):
+		_auto_rot_ease = 0.0
+		return
+	_auto_rot_ease = minf(_auto_rot_ease + dt / AUTO_ROT_EASE_SEC, 1.0)
+	if _auto_rot_ease <= 0.0:
+		return
+	# +Y 右手系正角 = 俯视逆时针（FM §11；符号由 test_auto_rotation 俯视探针核验）
+	var delta := Basis(Vector3.UP, deg_to_rad(rules.auto_rot_deg_per_sec * _auto_rot_ease * dt))
+	var cur: Basis = voxel_model.global_transform.basis
+	voxel_model.set_orientation(delta * cur)
+
+
+# 自动旋转的当前等效角速度（°/s，验收/测试读数用）
+func auto_rot_speed_deg() -> float:
+	if not auto_rotate_enabled or _rotation_hold:
+		return 0.0
+	return rules.auto_rot_deg_per_sec * _auto_rot_ease
+
+
 func is_running() -> bool:
 	return not _stopped and not _paused and session != null and session.outcome == "RUNNING"
 
@@ -535,6 +612,10 @@ func step(dt: float) -> void:
 	if not is_running():
 		return
 	_tick += 1
+	# FM §11：自动旋转在每步选靶/推进之前应用，每步至多一次 transform_version 递增
+	_apply_auto_rotation(dt)
+	target_selector.set_transform_version(voxel_model.transform_version)
+	fire_stats.advance(dt)  # 有效局时时钟（暂停不计入）
 	# CQ §2.3：在途弹超时取消返还（默认 3s）
 	for ticket in shot_ledger.advance_time(dt, SHOT_TIMEOUT_SEC):
 		if int(ticket.ball_id) > 0:
@@ -555,10 +636,10 @@ func _physics_process(delta: float) -> void:
 func _evaluate_outcome() -> void:
 	if session == null:
 		return
-	# CQ/S08 §4：胜利需无未结算票据；死局判负由完整性错误取代（§6）
+	# CQ/S08 §4：胜利需无未结算票据/在途球；FM/F4：且渲染实例归零（renderer 不同步=完整性错误）
 	outcome_state.evaluate(session, voxel_manager.alive_count(),
 		ball_physics.system.active_count(), shot_ledger.pending_count(),
-		session.level_id, _meta())
+		session.level_id, _meta(), voxel_manager.renderer.instance_count())
 
 
 # CQ §2.2 分色守恒审计：Q[c]+S[c]+F[c]==V[c]，V[c]+D[c]==V0[c]
@@ -617,50 +698,12 @@ func _hash_model(data: RefCounted) -> String:
 	return ctx.finish().hex_encode()
 
 
-# CQ/S09 §1：恢复校验——队列/槽引用的炮台存在且全局唯一、归属列合法、颜色合法、
-# 每色守恒 Q[c]+S[c]==V[c]（保存时已结算在途，F=0）。失败即拒绝，不静默修复。
-func _validate_restored() -> Dictionary:
-	var seen := {}
-	for c in session.queue_columns.size():
-		for tid in session.queue_columns[c]:
-			var id := int(tid)
-			if not session.turrets.has(id):
-				return {"ok": false, "error": "queue_refs_missing_turret:%d" % id}
-			if seen.has(id):
-				return {"ok": false, "error": "duplicate_turret_ref:%d" % id}
-			seen[id] = true
-	for si in session.slots.size():
-		var id := int(session.slots[si])
-		if id < 0:
-			continue
-		if not session.turrets.has(id):
-			return {"ok": false, "error": "slot_refs_missing_turret:%d" % id}
-		if seen.has(id):
-			return {"ok": false, "error": "duplicate_turret_ref:%d" % id}
-		seen[id] = true
-	for tid in session.turrets:
-		var t: Dictionary = session.turrets[tid]
-		var oc := int(t.get("origin_column", -1))
-		if oc < 0 or oc >= 5:
-			return {"ok": false, "error": "bad_origin_column:%d" % int(tid)}
-		if not rules.palette_color_ids.has(int(t.color_id)):
-			return {"ok": false, "error": "invalid_color:%d" % int(tid)}
-	# 每色守恒（迁移后的颜色计入）
-	var ammo_by_color := {}
-	for tid in session.turrets:
-		var t: Dictionary = session.turrets[tid]
-		ammo_by_color[t.color_id] = int(ammo_by_color.get(t.color_id, 0)) + int(t.ammo_remaining)
-	var alive_by_color := {}
-	for vid in session.alive_voxel_ids:
-		var cid: int = voxel_manager.color_of(int(vid))
-		alive_by_color[cid] = int(alive_by_color.get(cid, 0)) + 1
-	for cid in alive_by_color:
-		if int(ammo_by_color.get(cid, 0)) != int(alive_by_color[cid]):
-			return {"ok": false, "error": "conservation_broken:color=%s" % str(cid)}
-	for cid in ammo_by_color:
-		if not alive_by_color.has(cid):
-			return {"ok": false, "error": "ammo_without_voxels:color=%s" % str(cid)}
-	return {"ok": true}
+# FM/F3/F4：炮台状态白名单（非法状态坏档拒绝恢复，走备份重开路径）
+const VALID_TURRET_STATES := ["QUEUED", "LOADING", "READY", "WAITING_TARGET", "FIRING",
+	"RETURN_PENDING", "DRAINING"]
+
+
+# CQ/S09 §1：恢复校验已迁移为 LevelSession.validate_snapshot 纯函数（FM/F4 原子恢复：先校验后 mutate）
 
 
 func _meta() -> Dictionary:

@@ -1,0 +1,42 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+  PASS: 夹具关卡启动
+  PASS: 存活 300 块
+  PASS: 开局弹药总数=300（逐色守恒）
+  [play] alive=250 steps=971 orient=0
+  [play] alive=200 steps=3121 orient=1
+  [play] alive=150 steps=4318 orient=1
+  [play] alive=100 steps=5536 orient=1
+  [play] alive=50 steps=6769 orient=1
+  [play] alive=19 steps=7591 orient=1
+  [play] alive=18 steps=7625 orient=1
+  [play] alive=17 steps=7657 orient=1
+  [play] alive=16 steps=7679 orient=1
+  [play] alive=15 steps=7702 orient=1
+  [play] alive=14 steps=7738 orient=1
+  [play] alive=13 steps=7759 orient=1
+  [play] alive=12 steps=7786 orient=1
+  [play] alive=11 steps=7817 orient=1
+  [play] alive=10 steps=7840 orient=1
+  [play] alive=9 steps=7862 orient=1
+  [play] alive=8 steps=7891 orient=1
+  [play] alive=7 steps=7917 orient=1
+  [play] alive=6 steps=7947 orient=1
+  [play] alive=5 steps=7988 orient=1
+  [play] alive=4 steps=8001 orient=1
+  [play] alive=3 steps=8027 orient=1
+  [play] alive=2 steps=8074 orient=1
+  [play] alive=1 steps=8087 orient=1
+  [play] alive=0 steps=8175 orient=1
+  PASS: 正常操作完整通关（事件一次）
+  PASS: 全部清零
+  PASS: 终局守恒：Q+S+F=V=0 逐色成立
+  PASS: 全局连击出现 x2+
+  PASS: 通关后操作拒绝
+  PASS: 死局记完整性错误且只发一次
+  PASS: 完整性错误不重复发布
+  PASS: 进入B（测试夹具）
+  PASS: B 操作不改 A 快照
+  PASS: 返回A恢复槽位/队列状态
+  PASS: 切关后旧代事件拒绝
+TEST_PASS test_play

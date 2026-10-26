@@ -69,7 +69,9 @@ func _process(_delta: float) -> void:
 		if snap.is_empty() or not snap.get("active", false):
 			stale.append(id)  # 出界/结束但事件未到：幂等回收（§2.1）
 			continue
-		(_active[id] as Node3D).global_position = snap.pos
+		# FM §4.2：权威局部坐标 × 当前模型变换投影（球随模型共转，无双重变换——球不挂模型下）
+		var wfg: Transform3D = controller.voxel_model.world_from_grid()
+		(_active[id] as Node3D).global_position = wfg * (snap.get("local_pos", snap.pos) as Vector3)
 	for id in stale:
 		_recycle(int(id))
 

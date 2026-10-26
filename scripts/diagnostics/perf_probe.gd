@@ -3,7 +3,7 @@ extends RefCounted
 # S10 真机定位用：子系统耗时累计探针。ENABLED=false 时全部调用内联为空（零开销）。
 # perf_monitor 每 5s 取 snapshot_and_reset() 写入 perf_log.jsonl。
 
-const ENABLED := true
+const ENABLED := false  # FM/F5 交付构建：探针关闭（零开销）；调参期临时置 true
 
 static var _acc: Dictionary = {}
 

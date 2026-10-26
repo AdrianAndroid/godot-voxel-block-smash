@@ -7,6 +7,7 @@ const PerfProbe := preload("res://scripts/diagnostics/perf_probe.gd")
 var interval_sec := 5.0
 var path := "user://perf_log.jsonl"
 var enabled := true
+var stats_provider := Callable()  # FM/F2：() -> Dictionary（fire_stats 快照，合入每行）
 
 var _frames: Array[float] = []
 var _elapsed := 0.0
@@ -44,6 +45,7 @@ func _flush() -> void:
 		"p95_ms": p95 * 1000.0,
 		"mem_static_mb": OS.get_static_memory_usage() / 1048576.0,
 		"probe": PerfProbe.snapshot_and_reset(),
+		"stats": stats_provider.call() if not stats_provider.is_null() else {},
 	}
 	_file.store_line(JSON.stringify(row))
 	_file.flush()

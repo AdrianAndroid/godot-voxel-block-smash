@@ -9,6 +9,10 @@ var _failures := 0
 
 
 func _initialize() -> void:
+	# FM/F0：隔离测试存档目录（enter_level 会触发上一局保存），禁止触碰真实进度
+	var repo := preload("res://scripts/level/level_repository.gd")
+	repo.set_save_dir("user://test_saves/rotation_%d" % OS.get_process_id())
+	assert(repo.is_isolated())
 	call_deferred("_run")
 
 

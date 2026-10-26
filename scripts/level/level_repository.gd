@@ -3,18 +3,27 @@ extends RefCounted
 # 关卡存档仓库（架构 v6：user://、临时文件完整写入校验后替换、拒绝不兼容数据）
 # 阶段：阶段3接口，D09 默认：跨进程持久化 user://saves/level_<id>.json
 
-const SAVE_DIR := "user://saves"
+# FM/F0：目录可注入——测试必须 set_save_dir 到隔离目录，禁止触碰真实存档
+static var save_dir := "user://saves"
+
+
+static func set_save_dir(d: String) -> void:
+	save_dir = d
+
+
+static func is_isolated() -> bool:
+	return save_dir != "user://saves"
 
 
 static func save_path(level_id: String) -> String:
-	return SAVE_DIR.path_join("level_%s.json" % level_id)
+	return save_dir.path_join("level_%s.json" % level_id)
 
 
 static func save(snapshot: Dictionary) -> Dictionary:
 	var level_id: String = str(snapshot.get("level_id", ""))
 	if level_id.is_empty():
 		return {"ok": false, "error": "snapshot 缺 level_id"}
-	DirAccess.make_dir_recursive_absolute(SAVE_DIR)
+	DirAccess.make_dir_recursive_absolute(save_dir)
 	var final_path := save_path(level_id)
 	var tmp_path := final_path + ".tmp"
 	var f := FileAccess.open(tmp_path, FileAccess.WRITE)

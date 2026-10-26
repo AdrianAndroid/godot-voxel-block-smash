@@ -13,6 +13,11 @@ func _initialize() -> void:
 	var repo := preload("res://scripts/level/level_repository.gd")
 	var level_loader := preload("res://scripts/data/level_loader.gd").new()
 
+	# FM/F0：隔离测试存档目录，禁止触碰真实进度
+	var test_dir := "user://test_saves/persistence_%d" % OS.get_process_id()
+	repo.set_save_dir(test_dir)
+	assert(repo.is_isolated())
+
 	# 关卡配置契约
 	var c: Dictionary = catalog.load_config("res://assets/levels/level_01.json")
 	_check(c.ok and c.config.level_id == "level_01" and c.config.display_number == 1
@@ -22,7 +27,8 @@ func _initialize() -> void:
 	# 路径穿越拒绝
 	var traversal := {"schema_version": 1, "level_id": "x", "display_number": 1,
 		"model_path": "res://assets/models/json/../../secret.json", "model_revision": "1", "rules": {}}
-	var tp := "user://test_traversal.json"
+	var tp := test_dir.path_join("test_traversal.json")
+	DirAccess.make_dir_recursive_absolute(test_dir)
 	var f := FileAccess.open(tp, FileAccess.WRITE)
 	f.store_string(JSON.stringify(traversal))
 	f.close()
@@ -77,6 +83,40 @@ func _initialize() -> void:
 		and not bool(a3.pending_effects.get("designated_selecting", true)),
 		"S08 道具迁移（any_color→designated_target，选择模式清空）", str(a3.prop_counts))
 
+	# FM/F4：RNG 大 state 十进制字符串往返——恢复后继续同一随机序列（16 个 randi 一致）
+	# 取一个超过 double 53bit 安全整数范围的 state，证明字符串往返无精度损失
+	var rng_a := RandomNumberGenerator.new()
+	rng_a.seed = 4
+	var big_state: int = rng_a.state | 0x3000000000000001  # 强制高位（>2^53，double 无法精确表示）
+	rng_a.state = big_state
+	var expect: Array[int] = []
+	for i in 16:
+		expect.append(rng_a.randi())
+	var snap_rng: Dictionary = a.to_snapshot()
+	snap_rng.rng_seed = str(4)
+	snap_rng.rng_state = str(big_state)
+	# 走真实 JSON 序列化往返（number 会丢精度，字符串不会）
+	var parsed: Dictionary = JSON.parse_string(JSON.stringify(snap_rng))
+	var a4: RefCounted = session_script.new()
+	a4.level_id = "level_01"
+	_check(a4.restore(parsed) and a4.rng_state == big_state,
+		"大 rng_state JSON 往返无精度损失", "%d vs %d" % [a4.rng_state, big_state])
+	var rng_b := RandomNumberGenerator.new()
+	rng_b.seed = a4.rng_seed
+	rng_b.state = a4.rng_state
+	var got: Array[int] = []
+	for i in 16:
+		got.append(rng_b.randi())
+	_check(got == expect, "恢复后 16 个 randi 序列一致", "%s vs %s" % [str(got), str(expect)])
+	# 旧档 number 兼容路径（double 精度内安全值仍可恢复）
+	var snap_num: Dictionary = a.to_snapshot()
+	snap_num.rng_seed = 4
+	snap_num.rng_state = 987654
+	var a5: RefCounted = session_script.new()
+	a5.level_id = "level_01"
+	_check(a5.restore(snap_num) and a5.rng_seed == 4 and a5.rng_state == 987654,
+		"旧档 number rng 字段兼容恢复", "")
+
 	# 版本不兼容拒绝（v1 旧档/未知版本）
 	var bad_snap: Dictionary = a.to_snapshot()
 	bad_snap["version"] = 1
@@ -94,6 +134,7 @@ func _initialize() -> void:
 	repo.delete_save("level_01")
 	repo.delete_save("level_02")
 	DirAccess.remove_absolute(tp)
+	DirAccess.remove_absolute(test_dir)
 
 	# 关卡列表排序
 	var levels: Array = catalog.list_levels()

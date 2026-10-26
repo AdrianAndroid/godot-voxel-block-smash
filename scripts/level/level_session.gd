@@ -11,7 +11,7 @@ var session_generation := 0
 var rng_seed := 0
 var rng_state := 0        # CQ/S09：RNG 完整状态（恢复后继续同一随机序列）
 var model_hash := ""      # CQ/S09：模型内容哈希（模型变更→旧档作废）
-var rules_version := 2    # CQ/S09：规则版本（CQ 五列守恒规则=2）
+var rules_version := 2    # CQ/S09：规则版本（CQ 五列守恒规则=2；取回流程保留，版本维持 2）
 
 # 会话状态
 var alive_voxel_ids: Array = []
@@ -31,8 +31,8 @@ func to_snapshot() -> Dictionary:
 		"version": SNAPSHOT_VERSION,
 		"level_id": level_id,
 		"session_generation": session_generation,
-		"rng_seed": rng_seed,
-		"rng_state": rng_state,
+		"rng_seed": str(rng_seed),    # FM/F4：uint64 按十进制字符串往返（JSON number 是 double 会丢精度）
+		"rng_state": str(rng_state),
 		"model_hash": model_hash,
 		"rules_version": rules_version,
 		"alive_voxel_ids": alive_voxel_ids.duplicate(),
@@ -52,8 +52,8 @@ func restore(snap: Dictionary) -> bool:
 	if snap.get("version") != SNAPSHOT_VERSION or snap.get("level_id") != level_id:
 		return false  # 拒绝不兼容数据，不静默覆盖
 	session_generation = int(snap.session_generation)
-	rng_seed = int(snap.rng_seed)
-	rng_state = int(snap.get("rng_state", 0))
+	rng_seed = _u64_from_json(snap.get("rng_seed", 0))
+	rng_state = _u64_from_json(snap.get("rng_state", 0))
 	model_hash = str(snap.get("model_hash", ""))
 	rules_version = int(snap.get("rules_version", 0))
 	alive_voxel_ids = snap.alive_voxel_ids.duplicate()
@@ -92,3 +92,93 @@ func restore(snap: Dictionary) -> bool:
 	for k in snap.get("v0_counts", {}):
 		v0_counts[int(k)] = int(snap.v0_counts[k])
 	return true
+
+
+# FM/F4：uint64 与 JSON 往返——新档是十进制字符串；兼容旧档的 number（double 精度内安全值）
+static func _u64_from_json(v: Variant) -> int:
+	if v is String:
+		return int(v)  # 十进制字符串无精度损失
+	return int(v)  # 旧档 number（可能已被 double 截断，仅兼容路径）
+
+
+# FM/F4：纯校验（不落任何状态）——start_level 先校验后 mutate，坏档不产生半步状态。
+# 参数：level_id 归属、model_count 体素总数（alive 范围）、color_of 查色（守恒重算）、
+# palette_color_ids 合法色、valid_states 状态白名单、max_slots 槽位数。
+static func validate_snapshot(snap: Dictionary, level_id: String, model_count: int,
+		color_of: Callable, palette_color_ids: Array, valid_states: Array, max_slots: int) -> Dictionary:
+	if snap.get("version") != SNAPSHOT_VERSION:
+		return {"ok": false, "error": "bad_version:%s" % str(snap.get("version"))}
+	if str(snap.get("level_id", "")) != level_id:
+		return {"ok": false, "error": "level_mismatch"}
+	var turrets: Dictionary = snap.get("turrets", {})
+	var queue_columns: Array = snap.get("queue_columns", [])
+	var slots: Array = snap.get("slots", [])
+	var alive: Array = snap.get("alive_voxel_ids", [])
+	var unlocked := int(snap.get("unlocked_slots", 0))
+	# alive 去重 + 范围
+	var seen_v := {}
+	for vid in alive:
+		var id := int(vid)
+		if id < 0 or id >= model_count:
+			return {"ok": false, "error": "alive_out_of_range:%d" % id}
+		if seen_v.has(id):
+			return {"ok": false, "error": "alive_duplicate:%d" % id}
+		seen_v[id] = true
+	# 炮台字段 + 状态白名单 + 归属列 + 颜色
+	var max_tid := 0
+	for k in turrets:
+		var t: Dictionary = turrets[k]
+		var tid := int(t.get("turret_id", -1))
+		if tid != int(k) or tid < 0:
+			return {"ok": false, "error": "turret_id_mismatch:%s" % str(k)}
+		max_tid = maxi(max_tid, tid)
+		if not valid_states.has(str(t.get("state", ""))):
+			return {"ok": false, "error": "invalid_state:%s:%d" % [str(t.get("state", "")), tid]}
+		var oc := int(t.get("origin_column", -1))
+		if oc < 0 or oc >= 5:
+			return {"ok": false, "error": "bad_origin_column:%d" % tid}
+		if not palette_color_ids.has(int(t.get("color_id", -1))):
+			return {"ok": false, "error": "invalid_color:%d" % tid}
+	if int(snap.get("next_turret_id", 0)) <= max_tid:
+		return {"ok": false, "error": "next_turret_id_not_ahead:%d" % max_tid}
+	# 引用存在且全局唯一（队列+槽）
+	var seen := {}
+	for col in queue_columns:
+		for tid in (col as Array):
+			var id := int(tid)
+			if not turrets.has(id):
+				return {"ok": false, "error": "queue_refs_missing_turret:%d" % id}
+			if seen.has(id):
+				return {"ok": false, "error": "duplicate_turret_ref:%d" % id}
+			seen[id] = true
+	for si in slots.size():
+		var id := int(slots[si])
+		# 锁定槽（未解锁位）必须为空 -1
+		if si >= unlocked and id != -1:
+			return {"ok": false, "error": "locked_slot_occupied:%d" % si}
+		if id < 0:
+			continue
+		if si >= max_slots:
+			return {"ok": false, "error": "slot_out_of_range:%d" % si}
+		if not turrets.has(id):
+			return {"ok": false, "error": "slot_refs_missing_turret:%d" % id}
+		if seen.has(id):
+			return {"ok": false, "error": "duplicate_turret_ref:%d" % id}
+		seen[id] = true
+	# 每色守恒重算：Q[c]+S[c]==V[c]（保存时已结算在途，F=0）
+	var ammo_by_color := {}
+	for k in turrets:
+		var t: Dictionary = turrets[k]
+		var cid := int(t.color_id)
+		ammo_by_color[cid] = int(ammo_by_color.get(cid, 0)) + int(t.ammo_remaining)
+	var alive_by_color := {}
+	for vid in alive:
+		var cid: int = int(color_of.call(int(vid)))
+		alive_by_color[cid] = int(alive_by_color.get(cid, 0)) + 1
+	for cid in alive_by_color:
+		if int(ammo_by_color.get(cid, 0)) != int(alive_by_color[cid]):
+			return {"ok": false, "error": "conservation_broken:color=%s" % str(cid)}
+	for cid in ammo_by_color:
+		if not alive_by_color.has(cid):
+			return {"ok": false, "error": "ammo_without_voxels:color=%s" % str(cid)}
+	return {"ok": true}

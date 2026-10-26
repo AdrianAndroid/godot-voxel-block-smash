@@ -11,6 +11,7 @@ const AMMO_MIN := 30
 const AMMO_MAX := 80
 
 # CannonState.state 取值（QUEUED/LOADING/READY/WAITING_TARGET/FIRING/RETURN_PENDING/DRAINING）
+# 注：FM 2026-10-26 任务曾移除取回流程；用户同日决定保留取回以便测试。
 const STATE_QUEUED := "QUEUED"
 const STATE_LOADING := "LOADING"
 const STATE_READY := "READY"
@@ -126,11 +127,15 @@ static func column_lengths(session: RefCounted) -> Array[int]:
 
 
 # 随机排（CQ §2.4）：只重排五列中的现有 turret_id，保留 ID/颜色/弹量；无变化余地则不执行
+# FM/F4：判定从"总数<2"收紧为"至少一列≥2"——每列都只有 0~1 门时洗牌不可能改变任何排列，
+# 此前会白扣一次道具次数。
 static func shuffle_columns(session: RefCounted, rng: RandomNumberGenerator) -> bool:
-	var total := 0
+	var any_shuffleable := false
 	for col in session.queue_columns:
-		total += (col as Array).size()
-	if total < 2:
+		if (col as Array).size() >= 2:
+			any_shuffleable = true
+			break
+	if not any_shuffleable:
 		return false
 	for col in session.queue_columns:
 		var a: Array = col

@@ -1,0 +1,13 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+  PASS: UI 起始不成为旋转指针
+  PASS: UI 拖动零旋转
+  PASS: 模型区起始成为旋转指针
+  PASS: 灵敏度 0.01rad/px
+  PASS: 角度累积
+  PASS: 第二指忽略
+  PASS: 第二指拖动零旋转
+  PASS: 俯仰钳制≤70°
+  PASS: 失焦后残留指针无效
+  PASS: 归属清空
+TEST_PASS test_input

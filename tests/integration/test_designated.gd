@@ -87,9 +87,11 @@ func _run() -> void:
 		var wres: Dictionary = gc.designated_select_voxel(cam.unproject_position(w4), cam)
 		_check(not wres.ok and wres.reason == "wrong_color"
 			and int(gc.session.prop_counts.designated_target) == cnt0, "异色拒绝不扣次", str(wres))
-	# 没选中（指向空处）：拒绝不扣次
-	_cam_looking_at(cam, o.origin, o.origin + Vector3(0, 200, 0))
-	var eres: Dictionary = gc.designated_select_voxel(cam.unproject_position(o.origin + Vector3(0, 200, 0)), cam)
+	# 没选中（指向空处）：拒绝不扣次。
+	# 注意必须指向模型【外】的方向（向下远离模型）：FM/DDA 修复后 pick 射线是全程真实
+	# 扫掠，向上 200 会真的穿过模型命中体素（旧版靠 DDA 缺陷才"点空"）。
+	_cam_looking_at(cam, o.origin, o.origin + Vector3(0, -200, 0))
+	var eres: Dictionary = gc.designated_select_voxel(cam.unproject_position(o.origin + Vector3(0, -200, 0)), cam)
 	_check(not eres.ok and int(gc.session.prop_counts.designated_target) == cnt0,
 		"点空处拒绝不扣次", str(eres))
 

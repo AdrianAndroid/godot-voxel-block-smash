@@ -48,7 +48,19 @@ func _ready() -> void:
 	level_list = preload("res://scripts/presentation/level_list_presenter.gd").new()
 	level_list.on_level_chosen = _on_level_chosen
 	ui.add_child(level_list)
-	add_child(preload("res://scripts/diagnostics/perf_monitor.gd").new())
+	var pm: Node = preload("res://scripts/diagnostics/perf_monitor.gd").new()
+	# FM/F2：perf_log.jsonl 每行携带发射统计快照（FM05/13 证据）
+	pm.stats_provider = func() -> Dictionary:
+		return controller.fire_stats.snapshot() if controller != null \
+			and controller.fire_stats != null else {}
+	# FM/F0：测试隔离目录时 perf 日志同样隔离，避免并发测试清掉真机采样
+	if LevelRepository.is_isolated():
+		pm.path = LevelRepository.save_dir.path_join("perf_log.jsonl")
+	add_child(pm)
+	# FM/F5：CLI 带 --replay=<解路径> 时进入实时回放模式（公开 API 驱动，自动连发+自动旋转）
+	var replay := preload("res://scripts/app/replay_runner.gd").new()
+	add_child(replay)
+	replay.arm(self)
 
 
 # --- §3 会话生命周期 ---
@@ -105,6 +117,7 @@ func return_to_list() -> void:
 
 func _cleanup_session(save: bool) -> void:
 	router.cancel_all()
+	_set_rot_hold(false)
 	if controller.session != null:
 		if save:
 			controller.save_session()
@@ -174,9 +187,11 @@ func _input(event: InputEvent) -> void:
 	# 【新增代码】释放兜底：即使按下被 UI 消费，抬手也结束拖拽态，防手势卡死（§3）
 	if event is InputEventScreenTouch and not event.pressed:
 		router.handle_release(event.index)
+		_set_rot_hold(false)  # FM §11：松手自动旋转从当前姿态渐入接续
 	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT \
 			and not event.pressed:
 		router.handle_release(0)
+		_set_rot_hold(false)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -187,6 +202,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			_press_pos = event.position
 			_press_moved = false
 			router.handle_press(event.index, false)  # 到这里的触摸未被 UI 消费
+			_set_rot_hold(true)  # FM §11：模型区按住即暂停自动旋转（手动全胜）
 		elif hud.designated_picking_voxel() and not _press_moved:
 			# CQ/S08：指定目标选体素（12px 内视为点击；优先级高于模型旋转）
 			hud.designated_pick_at(event.position)
@@ -200,6 +216,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			_press_pos = event.position
 			_press_moved = false
 			router.handle_press(0, false)
+			_set_rot_hold(true)
 		elif hud.designated_picking_voxel() and not _press_moved:
 			hud.designated_pick_at(event.position)
 	elif event is InputEventMouseMotion and event.button_mask & MOUSE_BUTTON_MASK_LEFT:
@@ -225,7 +242,7 @@ func _apply_rotation(rot: Vector2) -> void:
 	const PITCH_LIMIT := 1.2217  # ±70°
 	if absf(tilt_new) > PITCH_LIMIT and absf(tilt_new) > absf(tilt_now):
 		candidate = Basis(Quaternion(up, rot.x)) * basis  # 越过边界：只偏航
-	controller.voxel_model.global_transform.basis = candidate
+	controller.voxel_model.set_orientation(candidate)  # FM §11：唯一写入口（transform_version++）
 
 
 # CQ-20261026/S02：相机按模型包围球拟合距离（旋转包络 8% 留白），
@@ -247,7 +264,7 @@ func _frame_model() -> void:
 	camera.rotation = Vector3.ZERO  # 直立：up=+Y、right=+X
 	router.sensitivity = PI / get_viewport().get_visible_rect().size.x  # 横扫全宽≈180°
 	# 初始姿态：青蛙正面（模型本地 -Z）转向相机（相机在 +Z）
-	controller.voxel_model.global_transform.basis = Basis(Quaternion(Vector3.UP, PI))
+	controller.voxel_model.set_orientation(Basis(Quaternion(Vector3.UP, PI)))
 
 
 func _notification(what: int) -> void:
@@ -256,11 +273,22 @@ func _notification(what: int) -> void:
 		controller.recorder.close()
 	elif what == NOTIFICATION_APPLICATION_PAUSED:
 		router.cancel_all()  # 退后台丢弃进行中的手势
+		_set_rot_hold(false)
 		if controller.session != null:
 			controller.set_paused(true)   # 【新增代码】§10：冻结自动连发，恢复不补发
 			controller.save_session()     # Android 退后台即落盘（G15）
 			controller.recorder.close()
 	elif what == NOTIFICATION_APPLICATION_RESUMED:
-		controller.set_paused(false)
+		# FM/F4：用户手动暂停（暂停遮罩可见）不被后台恢复冲掉
+		if not hud.is_pause_overlay_visible():
+			controller.set_paused(false)
 	elif what == NOTIFICATION_WM_WINDOW_FOCUS_OUT:
+		# FM §11：macOS 失焦只清理悬挂手势、不暂停（失焦时间计入 FM13 有效局时）
 		router.cancel_all()
+		_set_rot_hold(false)
+
+
+# FM §11：模型区指针按住/释放 → 控制器自动旋转持有开关（空安全）
+func _set_rot_hold(hold: bool) -> void:
+	if controller != null:
+		controller.set_rotation_hold(hold)

@@ -7,20 +7,27 @@ extends SceneTree
 var _failures := 0
 
 const GameControllerScript := preload("res://scripts/app/game_controller.gd")
+const LevelRepository := preload("res://scripts/level/level_repository.gd")
 
 
 func _initialize() -> void:
+	# FM/F0：隔离测试存档目录，禁止触碰真实进度
+	LevelRepository.set_save_dir("user://test_saves/auto_fire_%d" % OS.get_process_id())
+	assert(LevelRepository.is_isolated())
 	call_deferred("_run")
 
 
 # 模型正下方的发射原点解析器（模拟表现层投影）：底面体素可达。
 # 原点必须在出界判定盒【内部】（真机契约：相机射线∩边界AABB后内移0.1），否则出生即出界。
 func _aim_for(gc: Node) -> Callable:
+	# 原点在世界空间固定（真机语义：炮口世界位置不动，模型在其下方旋转）；
+	# 格空间原点每次调用按当前变换回算——旋转因此不断暴露新射界面。
+	var sys: RefCounted = gc.ball_physics.system
+	var world0: Vector3 = gc.voxel_model.world_from_grid() * (
+		sys.boundary_center + Vector3(0, -(sys.boundary_half - 0.5), 0))
 	return func(_slot_index: int) -> Dictionary:
-		var sys: RefCounted = gc.ball_physics.system
-		var origin_grid: Vector3 = sys.boundary_center + Vector3(0, -(sys.boundary_half - 0.5), 0)
-		var world: Vector3 = gc.voxel_model.world_from_grid() * origin_grid
-		return {"ok": true, "origin": world, "origin_grid": origin_grid}
+		var wfg: Transform3D = gc.voxel_model.world_from_grid()
+		return {"ok": true, "origin": world0, "origin_grid": wfg.affine_inverse() * world0}
 
 
 func _run() -> void:
@@ -63,11 +70,16 @@ func _run() -> void:
 	_check(p.ok and int(p.slot) == 0, "列首上位到最左空槽0", str(p))
 	var tid1 := int(p.turret_id)
 	var ammo1 := int(gc.session.turrets[tid1].ammo_remaining)
+	var peak_in_flight := 0
 	for i in 9000:  # 150 秒模拟：每发飞行 <1s，足够打空 80 发
 		gc.step(1.0 / 60.0)
+		peak_in_flight = maxi(peak_in_flight,
+			int(gc.session.turrets.get(tid1, {}).get("in_flight", 0)))
 		if int(gc.session.slots[0]) == -1:
 			break
 	_check(fires.n == ammo1, "无点击自动连发恰好打空 %d 发" % ammo1, "fires=%d" % fires.n)
+	# FM/F2：多球在途——冷却不等上一发落地（单球闸门已废除）
+	_check(peak_in_flight >= 2, "FM02 多球同时在途（峰值≥2）", "peak=%d" % peak_in_flight)
 	_check(int(gc.session.slots[0]) == -1 and not gc.session.turrets.has(tid1),
 		"弹尽炮台结算后移除离场", "")
 	_check(gc.auto_fire.registered_count() == 0, "弹尽后调度注销", "")
@@ -234,6 +246,24 @@ func _run() -> void:
 	var r10: Dictionary = gc10.start_level("res://assets/levels/level_01.json", snap4)
 	_check(not r10.ok and str(r10.get("error", "")) == "model_changed",
 		"模型变更旧档作废", str(r10))
+	# FM/F4：状态白名单——合法状态（含 RETURN_PENDING）恢复通过；非法状态坏档拒绝
+	var snap5: Dictionary = gc5.session.to_snapshot()
+	for tid in snap5.turrets:
+		(snap5.turrets[tid] as Dictionary)["state"] = "RETURN_PENDING"
+		break
+	var gc11: Node = GameControllerScript.new()
+	root.add_child(gc11)
+	var r11: Dictionary = gc11.start_level("res://assets/levels/level_01.json", snap5)
+	_check(r11.ok, "RETURN_PENDING 合法状态恢复通过", str(r11))
+	var snap6: Dictionary = gc5.session.to_snapshot()
+	for tid in snap6.turrets:
+		(snap6.turrets[tid] as Dictionary)["state"] = "BOGUS"
+		break
+	var gc12: Node = GameControllerScript.new()
+	root.add_child(gc12)
+	var r12: Dictionary = gc12.start_level("res://assets/levels/level_01.json", snap6)
+	_check(not r12.ok and str(r12.get("error", "")).contains("invalid_state"),
+		"非法状态坏档拒绝恢复", str(r12))
 
 	# --- 弹珠表现：生成/位置同步/出界幂等回收 ---
 	var gc8: Node = GameControllerScript.new()
@@ -256,8 +286,12 @@ func _run() -> void:
 	gc8.step(1.0 / 60.0)
 	mp._process(0.016)  # 测试手动步进不经过帧循环，显式触发同步
 	var snap8: Dictionary = gc8.ball_physics.system.ball_snapshot(mp_ball)
-	_check(not snap8.is_empty() and mp.ball_node(mp_ball).global_position.is_equal_approx(snap8.pos),
-		"位置跟随物理快照", "")
+	# FM §4：表现层按"当前变换×局部坐标"投影
+	var pos_ok := false
+	if not snap8.is_empty():
+		var expect_pos: Vector3 = gc8.voxel_model.world_from_grid() * (snap8.get("local_pos", snap8.pos) as Vector3)
+		pos_ok = mp.ball_node(mp_ball).global_position.is_equal_approx(expect_pos)
+	_check(pos_ok, "位置跟随物理快照（当前变换投影）", str(snap8))
 	gc8.ball_physics.system.end_ball(mp_ball)  # 模拟结束（表现层测试只验证回收路径）
 	gc8.step(1.0 / 60.0)
 	mp._process(0.016)
@@ -266,13 +300,22 @@ func _run() -> void:
 	mp.clear()
 	_check(mp.controller == null, "clear 解除绑定", "")
 
-	DirAccess.remove_absolute("user://saves/level_01.json")
+	_rm_tree(LevelRepository.save_dir)  # 清理隔离测试目录
 
 	if _failures == 0:
 		print("TEST_PASS test_auto_fire")
 	else:
 		print("TEST_FAIL test_auto_fire failures=%d" % _failures)
 	quit(0 if _failures == 0 else 1)
+
+
+func _rm_tree(path: String) -> void:
+	var d := DirAccess.open(path)
+	if d == null:
+		return
+	for f in d.get_files():
+		d.remove(f)
+	DirAccess.remove_absolute(path)
 
 
 func _nonempty_column(gc: Node) -> int:

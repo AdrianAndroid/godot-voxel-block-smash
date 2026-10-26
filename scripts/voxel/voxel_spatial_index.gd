@@ -87,7 +87,9 @@ func _dda_cells(p0: Vector3, p1: Vector3) -> Array:
 	if pos == endp:
 		return cells
 	var d := p1 - p0
-	var step := Vector3i(signi(d.x), signi(d.y), signi(d.z))
+	# signf 先取浮点符号：signi 会先把 float 截断成 int，|d|<1 的分量全变 0，
+	# 导致 step=(0,0,0) 空转到 4096 守卫、候选只剩起点格邻域（高速短步长漏扫根源）
+	var step := Vector3i(int(signf(d.x)), int(signf(d.y)), int(signf(d.z)))
 	var t_max := Vector3(INF, INF, INF)
 	var t_delta := Vector3(INF, INF, INF)
 	for ai in 3:

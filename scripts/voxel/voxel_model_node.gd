@@ -7,6 +7,17 @@ class_name VoxelModelNode
 var manager: RefCounted  # VoxelManager
 var voxel_data: RefCounted  # VoxelData
 
+## FM §11：模型朝向唯一写入口计数。选靶负缓存/扫描断点据此失效；
+## 所有姿态修改必须走 set_orientation，禁止外部直写 global_transform.basis。
+var transform_version := 0
+
+
+func set_orientation(b: Basis) -> void:
+	var t := global_transform
+	t.basis = b
+	global_transform = t
+	transform_version += 1
+
 
 func attach(p_manager: RefCounted, p_data: RefCounted) -> void:
 	manager = p_manager

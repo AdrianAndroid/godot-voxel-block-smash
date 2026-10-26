@@ -3,6 +3,8 @@ extends SceneTree
 # CQ-20261026/S03：离线可解性验证器（headless）。
 # 用与运行时相同的可达目标规则（fire_geometry.first_hit_is + collision_solver 扫掠、真实槽口起点、
 # 弹珠半径、当前模型变换）、3 炮位、列首规则与允许旋转视角，贪心回放一条可清空方案。
+# 注：验证器刻意按"无取回"的更严格规则求解（槽满无进展只靠旋转重暴露，全周无进展拒绝种子）——
+# 游戏内取回功能保留（用户 2026-10-26 决定），但已验证解不依赖取回（seed=4，4175 动作零取回）。
 # 成功种子写入关卡配置 queue_seed；操作序列写 reports/desktop/cq/s03-solution.json。
 # 运行：godot --headless --path . -s tools/cq_verify.gd -- [起始seed] [最多尝试]
 
@@ -241,27 +243,10 @@ func _verify_seed(seed: int, color_counts: Dictionary) -> bool:
 					"orient": _orient_names[orient_idx]})
 				continue  # 驻停不计消除进展，但列有限保证终止
 
-		# 4) 槽满且都射不出：取回一门当前无可达目标的炮台，腾出机动槽
-		if free_slot < 0:
-			var returned := false
-			for si in SLOT_CAPACITY:
-				var tid := slots[si]
-				var t: Dictionary = session.turrets[tid]
-				var org: Dictionary = _origin_grid(basis, si)
-				if org.get("ok", false) \
-						and _find_reachable(int(t.color_id), org.origin_grid) >= 0:
-					continue  # 能射的不取回
-				slots[si] = -1
-				t.state = "QUEUED"
-				CannonQueue.push_front(session, tid)  # 回来源列队首
-				_actions.append({"op": "return", "turret": tid, "slot": si,
-					"orient": _orient_names[orient_idx]})
-				returned = true
-				break
-			if returned:
-				continue
+		# FM/F3：取回操作已移除。槽满且都射不出时只能靠旋转重暴露；
+		# 完整旋转一周仍无进展（下方 since_progress 守卫）即拒绝该种子。
 
-		# 3) 无进展：旋转到下一候选朝向
+		# 4) 无进展：旋转到下一候选朝向
 		orient_idx = (orient_idx + 1) % _orientations.size()
 		since_progress += 1
 		_actions.append({"op": "rotate", "orient": _orient_names[orient_idx]})
@@ -317,7 +302,7 @@ func _los_blocked(p0: Vector3, p1: Vector3) -> bool:
 	if pos == endp:
 		return false
 	var d := p1 - p0
-	var step := Vector3i(signi(d.x), signi(d.y), signi(d.z))
+	var step := Vector3i(int(signf(d.x)), int(signf(d.y)), int(signf(d.z)))
 	var t_max := Vector3(INF, INF, INF)
 	var t_delta := Vector3(INF, INF, INF)
 	for ai in 3:
