@@ -1,6 +1,0 @@
-[gd_scene load_steps=2 format=3 uid="uid://voxelmodel01"]
-
-[ext_resource type="Script" path="res://scripts/voxel/voxel_model_node.gd" id="1"]
-
-[node name="VoxelModel" type="Node3D"]
-script = ExtResource("1")

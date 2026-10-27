@@ -1,1 +1,0 @@
-{"schema_version":1,"level_id":"level_fm05","display_number":9005,"model_path":"res://assets/models/json/plate_300.json","model_revision":"1.0","queue_seed":7,"rules":{"initial_slots":3,"merge_max":160,"ball_speed":100.0,"auto_fire_interval":0.1,"max_in_flight_per_turret":6,"max_active_projectiles":30,"auto_rot_deg_per_sec":8.0}}
