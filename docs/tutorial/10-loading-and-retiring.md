@@ -1,6 +1,6 @@
 # 第 10 章：动画不是装饰，而是状态的一部分
 
-[上一章](09-input-and-rotation.md) · [总目录](README.md) · [下一章](11-performance-engineering.md)
+[← 上一页：第 9 章：拖动手感来自状态和坐标的一致](09-input-and-rotation.md) · [总目录](README.md) · [下一页：第 11 章：性能工程从正确的问题开始 →](11-performance-engineering.md)
 
 ## 本章目标
 
@@ -80,4 +80,4 @@ stateDiagram-v2
 
 好的动画要有可信的业务时间轴。把所有权、射击资格和视觉表示分开，再由统一状态连接它们，就能让卡顿感、退款和场景切换等看似不同的问题得到一致处理。
 
-[上一章](09-input-and-rotation.md) · [下一章](11-performance-engineering.md)
+[← 上一页：第 9 章：拖动手感来自状态和坐标的一致](09-input-and-rotation.md) · [总目录](README.md) · [下一页：第 11 章：性能工程从正确的问题开始 →](11-performance-engineering.md)

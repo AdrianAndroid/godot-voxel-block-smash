@@ -1,6 +1,6 @@
 # 第 5 章：主场景不是全部节点的静态清单
 
-[上一章](04-voxel-rendering.md) · [总目录](README.md) · [下一章](06-gameplay-transactions.md)
+[← 上一页：第 4 章：用一个渲染节点显示 4105 个方块](04-voxel-rendering.md) · [总目录](README.md) · [下一页：第 6 章：一次发射为什么需要事务和票据 →](06-gameplay-transactions.md)
 
 ## 本章目标
 
@@ -91,4 +91,4 @@ flowchart TD
 
 场景树决定对象如何进入引擎，服务边界决定业务如何保持可测，生命周期决定旧对象何时停止影响新对象。下一章把一个点击拆成队列、槽位、票据和子弹之间的事务，理解完整游戏为何不能只写“弹药减一”。
 
-[上一章](04-voxel-rendering.md) · [下一章](06-gameplay-transactions.md)
+[← 上一页：第 4 章：用一个渲染节点显示 4105 个方块](04-voxel-rendering.md) · [总目录](README.md) · [下一页：第 6 章：一次发射为什么需要事务和票据 →](06-gameplay-transactions.md)

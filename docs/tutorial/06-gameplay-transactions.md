@@ -1,6 +1,6 @@
 # 第 6 章：一次发射为什么需要事务和票据
 
-[上一章](05-main-scene.md) · [总目录](README.md) · [下一章](07-local-ballistics.md)
+[← 上一页：第 5 章：主场景不是全部节点的静态清单](05-main-scene.md) · [总目录](README.md) · [下一页：第 7 章：模型转动时，子弹为什么还能命中 →](07-local-ballistics.md)
 
 ## 本章目标
 
@@ -125,4 +125,4 @@ func _run() -> void:
 
 发射不是一条动画命令，而是一笔有创建、预订、结算和取消的事务。把这些阶段显式化，既改善多炮正确性，也让性能统计具备含义。
 
-[上一章](05-main-scene.md) · [下一章](07-local-ballistics.md)
+[← 上一页：第 5 章：主场景不是全部节点的静态清单](05-main-scene.md) · [总目录](README.md) · [下一页：第 7 章：模型转动时，子弹为什么还能命中 →](07-local-ballistics.md)

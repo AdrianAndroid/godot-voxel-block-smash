@@ -1,6 +1,6 @@
 # 第 9 章：拖动手感来自状态和坐标的一致
 
-[上一章](08-target-selection.md) · [总目录](README.md) · [下一章](10-loading-and-retiring.md)
+[← 上一页：第 8 章：选靶不是找颜色，而是证明路径可达](08-target-selection.md) · [总目录](README.md) · [下一页：第 10 章：动画不是装饰，而是状态的一部分 →](10-loading-and-retiring.md)
 
 ## 本章目标
 
@@ -77,4 +77,4 @@ voxel_model.set_orientation(orientation)
 
 交互质量来自清楚的状态归属与坐标约定。少一份角度副本、少一个姿态写入口，往往比多加平滑算法更有效。下一章以同样方法处理大炮动画中的业务状态与视觉状态。
 
-[上一章](08-target-selection.md) · [下一章](10-loading-and-retiring.md)
+[← 上一页：第 8 章：选靶不是找颜色，而是证明路径可达](08-target-selection.md) · [总目录](README.md) · [下一页：第 10 章：动画不是装饰，而是状态的一部分 →](10-loading-and-retiring.md)

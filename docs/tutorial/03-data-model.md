@@ -1,6 +1,6 @@
 # 第 3 章：数据层是游戏规则的入口
 
-[上一章](02-project-and-rules.md) · [总目录](README.md) · [下一章](04-voxel-rendering.md)
+[← 上一页：第 2 章：让工程配置服务于游戏规则](02-project-and-rules.md) · [总目录](README.md) · [下一页：第 4 章：用一个渲染节点显示 4105 个方块 →](04-voxel-rendering.md)
 
 ## 本章目标
 
@@ -109,4 +109,4 @@ PY
 
 数据层把外部文件的自由格式收束成内部算法可以依赖的条件。它既决定正确性，也影响排错成本。不要等渲染、碰撞和存档都写完以后才补输入约束；那些模块越复杂，入口错误就越昂贵。
 
-[上一章](02-project-and-rules.md) · [下一章](04-voxel-rendering.md)
+[← 上一页：第 2 章：让工程配置服务于游戏规则](02-project-and-rules.md) · [总目录](README.md) · [下一页：第 4 章：用一个渲染节点显示 4105 个方块 →](04-voxel-rendering.md)

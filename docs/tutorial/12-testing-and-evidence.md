@@ -1,6 +1,6 @@
 # 第 12 章：让测试说明自己究竟证明了什么
 
-[上一章](11-performance-engineering.md) · [总目录](README.md) · [下一章](13-build-and-delivery.md)
+[← 上一页：第 11 章：性能工程从正确的问题开始](11-performance-engineering.md) · [总目录](README.md) · [下一页：第 13 章：把能运行的工程变成可核验的交付 →](13-build-and-delivery.md)
 
 ## 本章目标
 
@@ -123,4 +123,4 @@ PY
 
 可重复运行只是测试的基础，清楚解释结果范围才是工程能力。下一章把源码、二进制、日志和截图绑定起来，形成别人能够接手的交付。
 
-[上一章](11-performance-engineering.md) · [下一章](13-build-and-delivery.md)
+[← 上一页：第 11 章：性能工程从正确的问题开始](11-performance-engineering.md) · [总目录](README.md) · [下一页：第 13 章：把能运行的工程变成可核验的交付 →](13-build-and-delivery.md)

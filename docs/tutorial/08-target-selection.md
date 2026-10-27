@@ -1,6 +1,6 @@
 # 第 8 章：选靶不是找颜色，而是证明路径可达
 
-[上一章](07-local-ballistics.md) · [总目录](README.md) · [下一章](09-input-and-rotation.md)
+[← 上一页：第 7 章：模型转动时，子弹为什么还能命中](07-local-ballistics.md) · [总目录](README.md) · [下一页：第 9 章：拖动手感来自状态和坐标的一致 →](09-input-and-rotation.md)
 
 ## 本章目标
 
@@ -80,4 +80,4 @@ flowchart TD
 
 目标选择把几何正确性、调度公平和体验响应连在一起。缓存必须注明前提，预算必须覆盖路径，成功结果必须携带可以再次验证的瞄点。下一章处理这些计算所依赖的模型姿态如何由玩家与自动旋转共同驱动。
 
-[上一章](07-local-ballistics.md) · [下一章](09-input-and-rotation.md)
+[← 上一页：第 7 章：模型转动时，子弹为什么还能命中](07-local-ballistics.md) · [总目录](README.md) · [下一页：第 9 章：拖动手感来自状态和坐标的一致 →](09-input-and-rotation.md)

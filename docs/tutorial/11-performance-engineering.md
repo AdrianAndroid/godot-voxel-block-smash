@@ -1,6 +1,6 @@
 # 第 11 章：性能工程从正确的问题开始
 
-[上一章](10-loading-and-retiring.md) · [总目录](README.md) · [下一章](12-testing-and-evidence.md)
+[← 上一页：第 10 章：动画不是装饰，而是状态的一部分](10-loading-and-retiring.md) · [总目录](README.md) · [下一页：第 12 章：让测试说明自己究竟证明了什么 →](12-testing-and-evidence.md)
 
 ## 本章目标
 
@@ -89,4 +89,4 @@ ps -p "$TUTORIAL_GAME_PID" -o pid=,rss=,etime=,command=
 
 性能工程既优化程序，也优化判断。测量范围、单位、对照条件和统计口径正确，代码修改才有可信方向。下一章把这些证据组织成可重复运行的测试体系。
 
-[上一章](10-loading-and-retiring.md) · [下一章](12-testing-and-evidence.md)
+[← 上一页：第 10 章：动画不是装饰，而是状态的一部分](10-loading-and-retiring.md) · [总目录](README.md) · [下一页：第 12 章：让测试说明自己究竟证明了什么 →](12-testing-and-evidence.md)

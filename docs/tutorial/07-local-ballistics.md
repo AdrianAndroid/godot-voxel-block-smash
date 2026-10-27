@@ -1,6 +1,6 @@
 # 第 7 章：模型转动时，子弹为什么还能命中
 
-[上一章](06-gameplay-transactions.md) · [总目录](README.md) · [下一章](08-target-selection.md)
+[← 上一页：第 6 章：一次发射为什么需要事务和票据](06-gameplay-transactions.md) · [总目录](README.md) · [下一页：第 8 章：选靶不是找颜色，而是证明路径可达 →](08-target-selection.md)
 
 ## 本章目标
 
@@ -74,4 +74,4 @@ slab 法可以理解成三个轴分别给出“线段在哪一段参数范围位
 
 选择坐标系实际上是在选择玩法不变量。当前方案让玩家旋转不改变已锁定弹道，同时保留真实扫掠和结算。把坐标、单位和变换时刻写进接口，能减少大量看似随机的脱靶问题。
 
-[上一章](06-gameplay-transactions.md) · [下一章](08-target-selection.md)
+[← 上一页：第 6 章：一次发射为什么需要事务和票据](06-gameplay-transactions.md) · [总目录](README.md) · [下一页：第 8 章：选靶不是找颜色，而是证明路径可达 →](08-target-selection.md)
