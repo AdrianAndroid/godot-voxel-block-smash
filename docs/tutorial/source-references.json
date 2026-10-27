@@ -1,0 +1,506 @@
+[
+  {
+    "chapter": "01-godot-basics.md",
+    "path": "scripts/app/main.gd",
+    "line": 30,
+    "needle": "func _ready()",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/app/main.gd.txt"
+  },
+  {
+    "chapter": "01-godot-basics.md",
+    "path": "scenes/main/main.tscn",
+    "line": 12,
+    "needle": "[node name=\"Main\"",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scenes/main/main.tscn.txt"
+  },
+  {
+    "chapter": "02-project-and-rules.md",
+    "path": "project.godot",
+    "line": 18,
+    "needle": "window/size/viewport_width",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/project.godot.txt"
+  },
+  {
+    "chapter": "02-project-and-rules.md",
+    "path": "project.godot",
+    "line": 29,
+    "needle": "renderer/rendering_method=",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/project.godot.txt"
+  },
+  {
+    "chapter": "02-project-and-rules.md",
+    "path": "assets/levels/level_01.json",
+    "line": 9,
+    "needle": "\"initial_slots\"",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/assets/levels/level_01.json.txt"
+  },
+  {
+    "chapter": "02-project-and-rules.md",
+    "path": "docs/dev-step-log.md",
+    "line": 461,
+    "needle": "## 用户调整：去掉槽位锁",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/docs/dev-step-log.md.txt"
+  },
+  {
+    "chapter": "03-data-model.md",
+    "path": "scripts/data/voxel_loader.gd",
+    "line": 11,
+    "needle": "static func load_from_json",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/data/voxel_loader.gd.txt"
+  },
+  {
+    "chapter": "03-data-model.md",
+    "path": "scripts/data/voxel_data.gd",
+    "line": 8,
+    "needle": "var positions",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/data/voxel_data.gd.txt"
+  },
+  {
+    "chapter": "03-data-model.md",
+    "path": "scripts/data/game_rules.gd",
+    "line": 29,
+    "needle": "static func from_rules",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/data/game_rules.gd.txt"
+  },
+  {
+    "chapter": "04-voxel-rendering.md",
+    "path": "scripts/voxel/voxel_renderer.gd",
+    "line": 16,
+    "needle": "func build",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/voxel/voxel_renderer.gd.txt"
+  },
+  {
+    "chapter": "04-voxel-rendering.md",
+    "path": "scripts/voxel/voxel_renderer.gd",
+    "line": 49,
+    "needle": "func remove_voxel",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/voxel/voxel_renderer.gd.txt"
+  },
+  {
+    "chapter": "04-voxel-rendering.md",
+    "path": "scripts/voxel/voxel_manager.gd",
+    "line": 41,
+    "needle": "func destroy",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/voxel/voxel_manager.gd.txt"
+  },
+  {
+    "chapter": "04-voxel-rendering.md",
+    "path": "tests/unit/test_voxel.gd",
+    "line": 9,
+    "needle": "func _initialize",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/tests/unit/test_voxel.gd.txt"
+  },
+  {
+    "chapter": "05-main-scene.md",
+    "path": "scenes/main/main.tscn",
+    "line": 1,
+    "needle": "[gd_scene",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scenes/main/main.tscn.txt"
+  },
+  {
+    "chapter": "05-main-scene.md",
+    "path": "scripts/app/main.gd",
+    "line": 30,
+    "needle": "func _ready()",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/app/main.gd.txt"
+  },
+  {
+    "chapter": "05-main-scene.md",
+    "path": "scripts/app/main.gd",
+    "line": 70,
+    "needle": "func enter_level",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/app/main.gd.txt"
+  },
+  {
+    "chapter": "05-main-scene.md",
+    "path": "scenes/voxel/voxel_model.tscn",
+    "line": 5,
+    "needle": "[node name=\"VoxelModel\"",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scenes/voxel/voxel_model.tscn.txt"
+  },
+  {
+    "chapter": "05-main-scene.md",
+    "path": "scripts/app/main.gd",
+    "line": 257,
+    "needle": "func _frame_model",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/app/main.gd.txt"
+  },
+  {
+    "chapter": "05-main-scene.md",
+    "path": "scripts/app/main.gd",
+    "line": 124,
+    "needle": "func _cleanup_session",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/app/main.gd.txt"
+  },
+  {
+    "chapter": "05-main-scene.md",
+    "path": "tools/lifecycle_check.gd",
+    "line": 1,
+    "needle": "extends SceneTree",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/tools/lifecycle_check.gd.txt"
+  },
+  {
+    "chapter": "06-gameplay-transactions.md",
+    "path": "scripts/gameplay/cannon_queue_service.gd",
+    "line": 27,
+    "needle": "static func split_color_ammo",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/gameplay/cannon_queue_service.gd.txt"
+  },
+  {
+    "chapter": "06-gameplay-transactions.md",
+    "path": "scripts/gameplay/slot_service.gd",
+    "line": 26,
+    "needle": "static func leftmost_free",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/gameplay/slot_service.gd.txt"
+  },
+  {
+    "chapter": "06-gameplay-transactions.md",
+    "path": "scripts/gameplay/shot_ledger.gd",
+    "line": 17,
+    "needle": "func create_ticket",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/gameplay/shot_ledger.gd.txt"
+  },
+  {
+    "chapter": "06-gameplay-transactions.md",
+    "path": "scripts/app/game_controller.gd",
+    "line": 204,
+    "needle": "func place_front",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/app/game_controller.gd.txt"
+  },
+  {
+    "chapter": "06-gameplay-transactions.md",
+    "path": "scripts/app/game_controller.gd",
+    "line": 430,
+    "needle": "func _fire_at",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/app/game_controller.gd.txt"
+  },
+  {
+    "chapter": "06-gameplay-transactions.md",
+    "path": "scripts/app/game_controller.gd",
+    "line": 624,
+    "needle": "func _refund_ticket",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/app/game_controller.gd.txt"
+  },
+  {
+    "chapter": "06-gameplay-transactions.md",
+    "path": "tests/integration/test_loading_retire.gd",
+    "line": 32,
+    "needle": "func _aim_for",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/tests/integration/test_loading_retire.gd.txt"
+  },
+  {
+    "chapter": "06-gameplay-transactions.md",
+    "path": "scripts/gameplay/merge_service.gd",
+    "line": 11,
+    "needle": "static func merge_columns",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/gameplay/merge_service.gd.txt"
+  },
+  {
+    "chapter": "07-local-ballistics.md",
+    "path": "scripts/voxel/voxel_model_node.gd",
+    "line": 35,
+    "needle": "func world_from_grid",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/voxel/voxel_model_node.gd.txt"
+  },
+  {
+    "chapter": "07-local-ballistics.md",
+    "path": "scripts/gameplay/fire_geometry.gd",
+    "line": 30,
+    "needle": "static func screen_point_origin_world",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/gameplay/fire_geometry.gd.txt"
+  },
+  {
+    "chapter": "07-local-ballistics.md",
+    "path": "scripts/projectile/projectile_system.gd",
+    "line": 40,
+    "needle": "func spawn_local",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/projectile/projectile_system.gd.txt"
+  },
+  {
+    "chapter": "07-local-ballistics.md",
+    "path": "scripts/voxel/voxel_spatial_index.gd",
+    "line": 58,
+    "needle": "func candidates_along_segment",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/voxel/voxel_spatial_index.gd.txt"
+  },
+  {
+    "chapter": "07-local-ballistics.md",
+    "path": "scripts/projectile/collision_solver.gd",
+    "line": 8,
+    "needle": "static func sweep",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/projectile/collision_solver.gd.txt"
+  },
+  {
+    "chapter": "07-local-ballistics.md",
+    "path": "scripts/projectile/ball_physics.gd",
+    "line": 34,
+    "needle": "func physics_step",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/projectile/ball_physics.gd.txt"
+  },
+  {
+    "chapter": "07-local-ballistics.md",
+    "path": "docs/dev-step-log.md",
+    "line": 377,
+    "needle": "亚单位步长候选含终点邻格体素",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/docs/dev-step-log.md.txt"
+  },
+  {
+    "chapter": "08-target-selection.md",
+    "path": "scripts/gameplay/target_selector.gd",
+    "line": 335,
+    "needle": "func confirm_reachable_mp",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/gameplay/target_selector.gd.txt"
+  },
+  {
+    "chapter": "08-target-selection.md",
+    "path": "scripts/gameplay/target_selector.gd",
+    "line": 43,
+    "needle": "var scan_budget_us",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/gameplay/target_selector.gd.txt"
+  },
+  {
+    "chapter": "08-target-selection.md",
+    "path": "scripts/gameplay/target_selector.gd",
+    "line": 354,
+    "needle": "func _confirm_face_points",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/gameplay/target_selector.gd.txt"
+  },
+  {
+    "chapter": "08-target-selection.md",
+    "path": "scripts/gameplay/target_selector.gd",
+    "line": 77,
+    "needle": "func set_clock",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/gameplay/target_selector.gd.txt"
+  },
+  {
+    "chapter": "08-target-selection.md",
+    "path": "docs/dev-step-log.md",
+    "line": 512,
+    "needle": "墙钟写入 0.537s",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/docs/dev-step-log.md.txt"
+  },
+  {
+    "chapter": "09-input-and-rotation.md",
+    "path": "scripts/input/gesture_router.gd",
+    "line": 18,
+    "needle": "func handle_press",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/input/gesture_router.gd.txt"
+  },
+  {
+    "chapter": "09-input-and-rotation.md",
+    "path": "scripts/input/gesture_router.gd",
+    "line": 32,
+    "needle": "func handle_drag",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/input/gesture_router.gd.txt"
+  },
+  {
+    "chapter": "09-input-and-rotation.md",
+    "path": "scripts/app/main.gd",
+    "line": 248,
+    "needle": "func _apply_rotation",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/app/main.gd.txt"
+  },
+  {
+    "chapter": "09-input-and-rotation.md",
+    "path": "scripts/app/game_controller.gd",
+    "line": 726,
+    "needle": "func queue_view_input",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/app/game_controller.gd.txt"
+  },
+  {
+    "chapter": "09-input-and-rotation.md",
+    "path": "scripts/app/game_controller.gd",
+    "line": 765,
+    "needle": "func _apply_view_orientation",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/app/game_controller.gd.txt"
+  },
+  {
+    "chapter": "09-input-and-rotation.md",
+    "path": "scripts/app/main.gd",
+    "line": 278,
+    "needle": "func _notification",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/app/main.gd.txt"
+  },
+  {
+    "chapter": "10-loading-and-retiring.md",
+    "path": "scripts/gameplay/cannon_queue_service.gd",
+    "line": 17,
+    "needle": "const STATE_LOADING",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/gameplay/cannon_queue_service.gd.txt"
+  },
+  {
+    "chapter": "10-loading-and-retiring.md",
+    "path": "scripts/app/game_controller.gd",
+    "line": 232,
+    "needle": "const LOADING_SEC",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/app/game_controller.gd.txt"
+  },
+  {
+    "chapter": "10-loading-and-retiring.md",
+    "path": "scripts/presentation/hud_presenter.gd",
+    "line": 699,
+    "needle": "func _on_column_pressed",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/presentation/hud_presenter.gd.txt"
+  },
+  {
+    "chapter": "10-loading-and-retiring.md",
+    "path": "scripts/presentation/hud_presenter.gd",
+    "line": 726,
+    "needle": "func _begin_place_transition",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/presentation/hud_presenter.gd.txt"
+  },
+  {
+    "chapter": "10-loading-and-retiring.md",
+    "path": "scripts/app/game_controller.gd",
+    "line": 299,
+    "needle": "func _begin_retire",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/app/game_controller.gd.txt"
+  },
+  {
+    "chapter": "11-performance-engineering.md",
+    "path": "scripts/diagnostics/perf_monitor.gd",
+    "line": 31,
+    "needle": "func _flush",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/diagnostics/perf_monitor.gd.txt"
+  },
+  {
+    "chapter": "11-performance-engineering.md",
+    "path": "scripts/diagnostics/perf_probe.gd",
+    "line": 6,
+    "needle": "const ENABLED",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/diagnostics/perf_probe.gd.txt"
+  },
+  {
+    "chapter": "11-performance-engineering.md",
+    "path": "scripts/presentation/hud_presenter.gd",
+    "line": 47,
+    "needle": "var _refresh_dirty",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/presentation/hud_presenter.gd.txt"
+  },
+  {
+    "chapter": "11-performance-engineering.md",
+    "path": "scripts/presentation/hud_presenter.gd",
+    "line": 588,
+    "needle": "func _process",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/presentation/hud_presenter.gd.txt"
+  },
+  {
+    "chapter": "11-performance-engineering.md",
+    "path": "scripts/projectile/projectile_system.gd",
+    "line": 14,
+    "needle": "const ENDED_LOG_MAX",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/projectile/projectile_system.gd.txt"
+  },
+  {
+    "chapter": "11-performance-engineering.md",
+    "path": "docs/dev-step-log.md",
+    "line": 391,
+    "needle": "预算检查移到内层循环每次迭代顶部",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/docs/dev-step-log.md.txt"
+  },
+  {
+    "chapter": "12-testing-and-evidence.md",
+    "path": "scripts/level/level_repository.gd",
+    "line": 10,
+    "needle": "static func set_save_dir",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/level/level_repository.gd.txt"
+  },
+  {
+    "chapter": "12-testing-and-evidence.md",
+    "path": "tests/integration/test_loading_retire.gd",
+    "line": 84,
+    "needle": "var snap: Dictionary",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/tests/integration/test_loading_retire.gd.txt"
+  },
+  {
+    "chapter": "12-testing-and-evidence.md",
+    "path": "scripts/app/game_controller.gd",
+    "line": 831,
+    "needle": "func conservation_audit",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/app/game_controller.gd.txt"
+  },
+  {
+    "chapter": "12-testing-and-evidence.md",
+    "path": "scripts/app/replay_runner.gd",
+    "line": 124,
+    "needle": "\"pacing_target_210_240\"",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/app/replay_runner.gd.txt"
+  },
+  {
+    "chapter": "13-build-and-delivery.md",
+    "path": "reports/desktop/ux/build-info.md",
+    "line": 5,
+    "needle": "可执行 SHA256",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/reports/desktop/ux/build-info.md.txt"
+  },
+  {
+    "chapter": "13-build-and-delivery.md",
+    "path": "scripts/app/replay_runner.gd",
+    "line": 27,
+    "needle": "func arm",
+    "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
+    "snapshot": "docs/tutorial/source-baseline/scripts/app/replay_runner.gd.txt"
+  }
+]

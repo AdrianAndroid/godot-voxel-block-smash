@@ -544,3 +544,11 @@ FM14 性能（run-4 perf_log + run-5 RSS）：FPS min53.4/avg75.4；p95 max29.8m
 测试：见上；本阶段不启动 iOS 模拟器（任务约束）。
 未解决问题与修复计划：BLOCKED=ios.zip 模板（需用户安装 4.7.2.stable 模板后跑 §7 步骤）；NOT_RUN=模拟器/真机一切项（清单在 plan §8）；观察项=hit_effects 节点创建速率、event_bus._seen_event_ids 单局增长（均未改）。
 下一步：等用户安装 iOS 导出模板（或明确授权下载官方 tpz）→ `godot --headless --path . --export-release "iOS"` 产出 builds/ios/VoxelBlockSmash.xcodeproj → Xcode 签名（本机 Apple Development 身份）→ 真机清单。公共修复待 Mac 端提交同步（reports/ios/adaptation-status.md §8）。
+
+## 2026-10-27 iOS/Android 合入后 macOS 玩法回归（retest）
+
+【完成工作】：拉取合并 2e4f6d6+c54e51e（iOS 适配：emulate_mouse 门控/安全区/诊断发布门禁/iOS 导出预设）；逐文件 diff 审查确认无桌面玩法逻辑改动；全新导出 macOS .app（SHA256 b60ed174…431f）；21/21 headless 套件 PASS；真实 .app 绝对路径回放三连 WON（168.7/193.1/183.9s，alive=0、renderer=0、守恒绿、4105==4105、0 取消、0 op_mismatch）；抽帧确认渲染/HUD/队列/连击显示正常。另：重写 README.md 为成品版（玩法/操作/构建/测试/性能/架构/文档导航）；收录 docs/tutorial/ 13 章教程与生成提示词。
+【踩坑】：回放 --replay 必须绝对路径（res:// 与相对路径在导出包读不到，arm 失败会落正常模式并自动续玩旧存档，产生"假对局"）；验收前 pkill 清旧实例。
+【测试与证据】：reports/desktop/retest/（retest-after-ios-merge.md + replay_retest4/5/6.json + 进度流 + stdout）。
+【未解决】：发布构建 perf 采样 NOT_RUN（诊断门禁改为 debug-only，非热路径改动，历史性能结论不受影响）；人工手感复验 NOT_RUN（输入路径未变）。
+【下一步】：提交推送；等用户 iOS 模板后继续 iOS 出包。
