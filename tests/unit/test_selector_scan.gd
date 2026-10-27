@@ -26,6 +26,15 @@ func _mk_selector() -> Array:  # [selector, manager, data]
 
 func _run() -> void:
 	var all_true := func(_vid: int) -> bool: return true
+	# P4：多点确认使否定全扫更慢，单次调用可能返回 scan_pending——抽到终态（断点续扫
+	# 语义由上文专属用例验证，这里只关心缓存/游标语义）
+	var drain := func(sel: RefCounted, color: int, origin: Vector3) -> Dictionary:
+		var r: Dictionary = {}
+		for i in 200000:
+			r = sel.find_target(color, origin, all_true)
+			if str(r.get("reason", "")) != "scan_pending":
+				break
+		return r
 
 	# --- 全量基准：模型正下方原点，颜色 1（3167 块）必有可达目标 ---
 	var parts: Array = _mk_selector()
@@ -82,36 +91,39 @@ func _run() -> void:
 	var parts3: Array = _mk_selector()
 	var sel3: RefCounted = parts3[0]
 	var inside: Vector3 = data.center_offset()
-	var neg1: Dictionary = sel3.find_target(1, inside, all_true)
+	var neg1: Dictionary = drain.call(sel3, 1, inside)
 	_check(not neg1.ok, "模型内部原点无可达目标", str(neg1))
 	var calls_before: int = sel3.dbg_neg_served
-	sel3.find_target(1, inside, all_true)
+	drain.call(sel3, 1, inside)
 	_check(sel3.dbg_neg_served == calls_before + 1, "同 gen+tver 负缓存服务", "")
-	# FM10/F5 改：负缓存服务只看 gen+ckey（原点格），tver 变化不再失效——
-	# 持续旋转下 tver 每步变，旧双匹配永不服务会把 CPU 吃光（wait_ratio 0.89 实测）。
-	# 同一原点格内 tver 变化仍服务；原点跨格（ckey 变化）才重新实扫。
+	# P4 §6.3：负缓存 = gen 匹配 且（tver 精确匹配 或 TTL≤0.1s 模拟秒退避）。
+	# 几何未变（同 tver）长期服务；tver 变化且超 TTL 才重扫（UX11 不永久封锁）。
 	sel3.set_transform_version(sel3._tver + 1)
 	var dbg_at: int = sel3.dbg_neg_served
-	sel3.find_target(1, inside, all_true)
-	_check(sel3.dbg_neg_served == dbg_at + 1, "tver 变化同原点格负缓存仍服务", "")
-	sel3.find_target(1, inside + Vector3(4, 0, 0), all_true)  # 原点跨格 → 新 ckey 重扫
+	drain.call(sel3, 1, inside)
+	_check(sel3.dbg_neg_served == dbg_at + 1, "tver 变化 TTL 内负缓存仍服务", "")
+	sel3.set_clock(1.0e9)  # 模拟时钟远超 TTL → 负缓存失效重扫
+	drain.call(sel3, 1, inside)
+	_check(sel3.dbg_neg_served == dbg_at + 1, "tver 变化且超 TTL 负缓存失效（重扫）", "")
+	sel3.set_clock(-1.0)
+	drain.call(sel3, 1, inside + Vector3(4, 0, 0))  # 原点跨格 → 新 ckey 重扫
 	_check(sel3.dbg_neg_served == dbg_at + 1, "原点跨格负缓存失效（重新实扫）", "")
 	# 删除推进 gen 也使负缓存失效（既有语义保持；on_voxel_destroyed 是 gen 唯一入口）
 	var parts4: Array = _mk_selector()
 	var sel4: RefCounted = parts4[0]
-	sel4.find_target(1, inside, all_true)
+	drain.call(sel4, 1, inside)
 	var dbg4: int = sel4.dbg_neg_served
-	sel4.find_target(1, inside, all_true)
+	drain.call(sel4, 1, inside)
 	_check(sel4.dbg_neg_served == dbg4 + 1, "gen 稳定负缓存服务", "")
 	sel4.on_voxel_destroyed(0)  # 任意删除推进 gen（frontier 增量维护由 manager 路径负责）
-	sel4.find_target(1, inside, all_true)
+	drain.call(sel4, 1, inside)
 	_check(sel4.dbg_neg_served == dbg4 + 1, "gen 变化负缓存失效（重新实扫）", "")
 
 	# --- 轮转起始桶：完整扫一轮后 _rr_cursor 前进 ---
 	var parts5: Array = _mk_selector()
 	var sel5: RefCounted = parts5[0]
 	var c0: int = int(sel5._rr_cursor.get(1, 0))
-	sel5.find_target(1, inside, all_true)  # 完整否定扫
+	drain.call(sel5, 1, inside)  # 完整否定扫
 	var c1: int = int(sel5._rr_cursor.get(1, 0))
 	_check(c1 == (c0 + 1) % 24, "全扫后轮转起始桶前进", "%d→%d" % [c0, c1])
 

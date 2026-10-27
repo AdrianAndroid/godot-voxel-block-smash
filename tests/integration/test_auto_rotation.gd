@@ -75,7 +75,7 @@ func _run() -> void:
 	# --- ③ 帧率无关：30/60/120Hz 各 5s（期望 39.2°），两两差 ≤0.5° ---
 	var totals := {}
 	for hz in [30.0, 60.0, 120.0]:
-		gc.voxel_model.set_orientation(Basis.IDENTITY)
+		gc.set_view_pose(0.0, 0.0)  # P1：姿态唯一来源是控制器 yaw/pitch，禁止直写 Basis
 		gc._auto_rot_ease = 0.0
 		var tr := PhiTracker.new()
 		tr.push(_marker_phi(gc))
@@ -88,7 +88,7 @@ func _run() -> void:
 		"30/60/120Hz 角位移一致", str(totals))
 
 	# --- ④a 按住冻结 + 松手接续无跳角 ---
-	gc.voxel_model.set_orientation(Basis.IDENTITY)
+	gc.set_view_pose(0.0, 0.0)
 	gc._auto_rot_ease = 0.0
 	_step_n(gc, 60.0, 1.0)  # 渐入到满速
 	gc.set_rotation_hold(true)

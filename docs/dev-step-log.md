@@ -468,3 +468,65 @@ FM14 性能（run-4 perf_log + run-5 RSS）：FPS min53.4/avg75.4；p95 max29.8m
 测试：全套件 19/19 PASS（桌面 headless）；真机目检：窗口 540×1228（含标题栏）、槽位行 3 占用+2 空、无"锁"、道具行无"加槽"、存档正常恢复续玩。
 未解决问题与修复计划：无。replay_runner 开局的 use_prop("add_slot") 现在会返回失败并记录在报告 meta（无害，5 槽开局节奏只会更好）。
 下一步：等用户实玩确认（此前 FM 人工项：UI 实玩计时/后台重开/合成指定滚动）后提交 git。
+
+## 2026-10-27 交互打磨（P0 核查 + §9 收尾修复）
+
+改动文件、目的：按 `docs/tasks/2026-10-27-interaction-polish-plan.md` 启动 P0~P5。
+- P0 核查结论：旋转两套角度（gesture_router 内部 _yaw/_pitch vs main 四元数累乘）、上位瞬移（place_front 立即 READY + HUD ghost 只有 TEX_BODY）、耗尽瞬消（_settle_ticket 直接 erase+空槽）、选靶仅中心瞄点/分片旧原点无终核/负缓存无 TTL——全部在源码中复核属实，逐项进入 P1~P4。
+- **§9 修复 1（真 bug，probe 证实）**：`level_session.gd` validate_snapshot 在 restore() 键归一化之前用 `turrets.has(int)` 查键，而磁盘 JSON 读回后键是 String——真实中局存档（槽位非空/队列有引用）恒被拒（`queue_refs_missing_turret`），玩家重启必丢进度。修复：validate_snapshot 开头把 turrets 键归一化为 int 再校验。补磁盘端到端用例（test_persistence：控制器中局落盘→磁盘读回→断言键为 String→start_level 恢复成功且 alive/slots 一致）。
+- **§9 修复 2**：`level_repository.backup_save` 不再忽略 rename 返回值（失败返回空串+push_warning，先删旧 .bak 再备份）；main.gd 所有 save_session 调用收敛到 `_save_checked()` 检查返回值并告警；坏档备份失败时明确提示"原档仍在"。
+- 遗留观察（未完全定位，不影响修复结论）：01:37 验证启动时窗口曾短暂显示疑似恢复态（剩余3705），与校验恒失败矛盾；当时存在两个 voxel 窗口（4856 旧、4872 新），点击坐标同时落在两者区域内，疑为旧实例窗口所致。§9 修复后 E2E 已证明恢复链路正确，后续 UX 验收再观察。
+测试：test_persistence 全 PASS（含新 E2E 用例）。
+实际命令、退出码、设备、构建标识：`godot --headless --path . -s tests/persistence/test_persistence.gd` exit=0（桌面 headless）。
+未解决问题与修复计划：P1~P4 待实施；01:37 恢复显示之谜留 UX 验收观察。
+下一步：P1 旋转——控制器唯一 yaw/pitch 状态（B=Rx(pitch)×Ry(yaw)×B0，pitch±60°），gesture_router 只报原始像素位移，输入在 step() 顶部统一应用。
+
+## 2026-10-27 交互打磨 P1：旋转重构为控制器唯一 yaw/pitch 状态
+
+改动文件、目的：
+- `scripts/app/game_controller.gd`：新增唯一视角状态 `_view_yaw/_view_pitch`（+待应用输入队列 `_pending_dyaw/_dpitch`）；`_apply_view_rotation(dt)` 在 step() 顶部统一应用手动输入与自动旋转；姿态按 `B=Rx(pitch)×Ry(yaw)` 重建（外层 Rx 保证任意 yaw 下上下拖=屏幕俯仰、竖直轴不随 yaw 积累侧倾）；pitch 钳制 ±60°（越界部分丢弃、反向立即响应，不再整段吞输入）；自动旋转沿同一 yaw 轴保持当前 pitch（pitch=0 时与旧固定 +Y 行为等价）；start_level 切局重置视角与渐入状态（旧存档无姿态字段=默认正面 yaw=PI）。
+- `scripts/input/gesture_router.gd`：删除内部 _yaw/_pitch/sensitivity/pitch_limit/current_angles——只路由已归属指针的原始像素位移（方案 §3.1 消除"两套角度"）。
+- `scripts/app/main.gd`：`_apply_rotation` 改为像素位移×分轴灵敏度（横扫全宽≈180°、模型区纵扫≈120°）后入队控制器；`_frame_model` 不再直写 Basis（start_level 已校准初始姿态）。
+- 测试迁移：test_input（原始位移透传断言）；test_rotation（同步冲刷 `_apply_view_rotation(0.0)`；钳制更新为 ±60°；新增 UX02 交替 20 轮回零无 roll、UX03 边界满幅+反向立即响应、UX01 侧面 ±90° 持续下拖不倒立）；test_auto_rotation / test_local_ballistics（姿态改写走 `set_view_pose` 唯一入口，禁止直写 Basis）。
+实际命令、退出码、设备、构建标识：全套件 19/19 PASS（桌面 headless，各 `godot --headless -s tests/...` exit=0）。
+未解决问题与修复计划：手感（UX01/03/04 主观项）待 P5 真机 App 拖动验收。
+下一步：P2 上位——真 LOADING 阶段（模拟时钟 0.28s、到位才注册开火）+ 完整炮台过渡层动画。
+
+## 2026-10-27 交互打磨 P2/P3：上位真阶段 + 耗尽退场收缩淡出
+
+改动文件、目的：
+- `scripts/app/game_controller.gd`：LOADING_SEC=0.28/RETIRE_SEC=0.20 模拟时钟常量；place_front → LOADING（不注册调度，到位才 READY+register+发 turret_ready[tid,slot]）；`loading_progress/retire_progress/retiring_active/_tick_transitions/_begin_retire`；`_settle_ticket` 按 ammo/in_flight 真实数值收尾（在途>0 等待 → RETURN_PENDING → 零弹退场、有弹回队列 → ammo≤0 → RETIRING）；return_turret 拒 LOADING/RETIRING，零弹取回=退场删除不回队列（UX08）；step() 在 outcome 非 RUNNING 时仍推进过渡时钟（胜利遮罩延后支撑）；save_session 把 LOADING 归一为 READY、RETIRING 立即结算完再快照（恢复不重播、不卡位）；VALID_TURRET_STATES += RETIRING。
+- `scripts/gameplay/cannon_queue_service.gd`：STATE_RETIRING 常量。
+- `scripts/presentation/cannon_view.gd`：新 "loading"（只显基座半亮，无炮管/数字）与 "retiring"（灰化归入 draining 组）状态。
+- `scripts/presentation/hud_presenter.gd`：`_transition_layer` 过渡层 + `_transitions`（tid→完整 CannonView 飞行体）；bind() 清过渡+订阅 turret_ready/retire_finished；点列上位时若该列在上位中则 toast"上位中…"拒绝；`_begin_place_transition` 完整炮台（身/管/色/数）从队列位飞到槽位，逐帧由 `controller.loading_progress(tid)` 驱动（不依赖 Tween 回调，headless 不可卡）；`_tick_retire_visuals` 收缩 1→0.15 + 淡出；`_reset_slot_fx` 幂等复位；refresh 对 LOADING/RETIRING 显对应状态且禁用；WON 结算遮罩在 retiring_active() 期间延后（retire_finished 事件+_process 兜底）；`clear_transitions()` 供重开/返回清理；炮管瞄准与 muzzle 投影跳过 loading。
+- `scripts/app/main.gd`：`_cleanup_session` 调 `hud.clear_transitions()`（重开/返回取消旧动画对象）。
+- 测试迁移/新增：test_auto_fire（LOADING 中取回拒绝后等待落地再取回）；test_presentation（过渡层子节点断言、LOADING 等待）；tests/integration/test_loading_retire.gd（新，30 断言：LOADING 时钟内零开火/到点注册/进度可读；上位中取回拒绝；保存归一 READY 且恢复不卡；自然耗尽 DRAINING→RETIRING 保槽→释放删除；终局后 RETIRING 时钟照常走完；零弹取回 pending→退场删除不回队列；两路径守恒审计绿）。test_designated（LOADING 等待期屏蔽 origin_resolver 防调度抢先打掉指定目标）。
+- 测试修复说明：test_loading_retire 首版改写 ammo_remaining 被守恒审计正确抓获（Q+S+F==V 每色守恒），改为自然耗尽路径——审计本身有效。
+实际命令、退出码、设备、构建标识：全套件 20/20 PASS（桌面 headless，逐套件 `godot --headless --path . -s tests/...` exit=0，含新 test_loading_retire）。
+未解决问题与修复计划：上位/退场动画观感（UX05/06/07 主观项）与胜利遮罩延后实测待 P5 真机 App 验收。
+下一步：P4 选靶——暴露面多点真实扫掠契约 {voxel_id, aim_grid_point, face_id, origin_used, geometry_version}、_fire_at 发射前当前原点终核、负缓存 TTL≤100ms、等待原因可审计。
+
+## 2026-10-27 交互打磨 P4：选靶——暴露面多点真实扫掠 + 负缓存有界失效 + 旧原点终核
+
+改动文件、目的：
+- `scripts/gameplay/target_selector.gd`：选靶从"仅中心瞄点"升级为多点契约 `{voxel_id, aim_grid_point, face_id, origin_used, geometry_version}`。中心被挡时对朝向原点的暴露面采样 5 点（面中心 + 0.2/0.8 内缩角，法向阈值 rel·n>0.2），瞄点向块内偏 0.06 格（DDA 终点=目标格不误伤自身，扫掠穿过扩张盒表面）；每点 DDA 预过滤+真实球半径完整扫掠，只有 first_hit==目标才接受——不穿透异色、不假删。新增 `confirm_reachable_mp`（指定目标与普通选靶同一多点接口）、`confirm_aim`（发射前终核）；`confirm_reachable` 委托 mp 版。负缓存条目带 `sim_t`：gen 匹配且（tver 精确匹配长期服务，或 TTL≤0.1s 短暂退避）——持续旋转下同粗原点格内目标变可达不永久封锁（UX11）；age<0（时钟域保护）不服务。`set_clock/begin_step`：模拟时钟注入 + 全局步预算 6ms 全炮台共享（分片候选顶部检查）。模拟时钟默认 0（独立使用 TTL 永不超时=FM/F5 语义，不混墙钟——实测墙钟写入 0.537s 与模拟时钟 0.016s 混域产生负 age 永久服务 bug，已修）。
+- `scripts/app/game_controller.gd`：step() 每步 `set_clock(_sim_time)+begin_step()`；`_fire_at` 用契约 `aim_grid_point`（无则回退中心）算弹道、写入票据与事件快照（炮管瞄准/弹道/预订同点）；`try_auto_fire` 发射前终核——分片成功候选锚定旧原点（origin_used≠当前炮口）时用当前原点 confirm_aim 同一瞄点，失败不扣弹不开火、reason=revalidate_failed（UX12）；`designated_select_voxel/_designated_target_for` 走多点接口。
+- `scripts/gameplay/auto_fire_scheduler.gd`：revalidate_failed 冷却 0（下一物理步重试，与 scan_pending 同）。
+- `scripts/gameplay/fire_stats.gd`：revalidate_failed 计数（等待原因可审计，snapshot 带出）。
+- `scripts/presentation/hud_presenter.gd`：炮管瞄准取票据 aim_grid_point（与弹道同点）。
+- 测试迁移/新增：`tests/integration/test_targeting_points.gd`（新，27 断言；夹具 ux_targeting_300.json：T(5,8,5)色1+B(3,1,4)色2+298 色9 平板，几何经 probe 数值验证）——UX09 中心被挡面角可达：契约层（face=3 aim=(5.8,8.06,5.2)≠中心）+真实飞行命中 T 只减一（B 存活、弹药 3→2、1 命中 0 取消、票据/快照/炮管同点未换回中心）；UX10 笼形/全挡原点：多点确认全拒、不穿透不假删不扣弹、reason=no_reachable_target 计入统计；UX11 负缓存：同 gen+tver 服务、超 TTL 立即重扫命中（<0.2s）、控制器级 7 帧内开火；UX12 分片锚定旧原点：片1 scan_pending→换原点片2 终核否决（无预订泄漏、revalidate_failed+1）→原点恢复立即开火。test_selector_scan：drain 续扫辅助 + TTL 语义断言更新。
+实际命令、退出码、设备、构建标识：全套件 21/21 PASS（桌面 headless，`godot --headless --path . -s tests/...` 逐个 exit=0，含新 test_targeting_points 27/27）。
+未解决问题与修复计划：多点扫掠对真实关卡节奏/性能的影响（每秒扫掠次数、wait_ratio、revalidate_failed 占比）待 P5 全清回放量化；选靶手感（UX09/10/11 实机观感）待 P5 App 验收。
+下一步：P5——全新 macOS .app 构建 + UX01~UX14 实机逐项验收（拖动/上位/退场/选靶观感，关键帧或录像）+ 全清回放 ≤300s（LOADING/RETIRING/新选靶全开）+ 性能（FPS≥30/p95≤50ms/RSS≤512MB/120s+/30 轮生命周期）+ 最终报告（含 .app SHA256 与诚实 NOT_RUN 项）。
+
+## 2026-10-27 交互打磨 P5：集成验收——全新 .app + 13 连 WON 全清回放 + 性能/生命周期
+
+改动文件、目的：无代码改动（纯验收）。全新导出 `builds/macos/VoxelBlockSmash.app`（SHA256 d3cf2eea…e153，build-info 见 reports/desktop/ux/build-info.md）。
+- **UX13 全清回放 ×13 连 WON**：171.3/182.5/171.7/184.5/169.9/178.5/169.8/170.9/170.1/170.6/169.4/169.9/190.9s（mean 174.6s，全 ≤300s，有效=墙钟），每局 4105/4105、renderer=0、守恒绿、0 取消、revalidate_failed 7~18（旧原点终核正确拦截）。比打磨前基线 210.8~236.8s 快 ~20%。最慢 190.9s 发生在用户切走桌面 Space 后（窗口隐藏节流），仍达标。
+- **UX14 性能**：对局期 FPS min 42/avg 81.6（≥30 ✓）；p95≤50ms 在 35 采样中 32 达标，3 个尖峰（开局建模 71.7/56.7ms、对局中 59.2ms 单点）；RSS 338→339MB/190s 平坦（≤512MB ✓、零增长 ✓）；tools/lifecycle_check.gd 30 轮进关/游玩/返回全 PASS 无泄漏。
+- **视觉证据**：12s 对局录像 ux_replay_segment.mov + 5fps×20 帧窗口拼贴 seg_tile.png（可见连续自动旋转、剩余数单调下降、DRAINING"0"灰显→RETIRING→空槽→新炮补位全过程）。
+- **01:37 恢复显示之谜闭环**：系遗留旧 App 实例（PID 70871/窗口 4872，闲置 6000+s 仍写同一 perf_log）造成双窗口混淆，已结束该进程。
+- **观察项（非阻塞）**：origin_ray_miss 调度重试 294/17195（1.7%，最大连击 40），FM 轮既有（fire_geometry 屏幕射线∩旋转后格空间 AABB 近切线未命中），白名单冷却内恢复，不影响命中率；建议后续加炮口射线未命中回退边界中心。
+实际命令、退出码：21/21 套件 exit=0；`godot --headless --path . --export-release "macOS"` exit=0；13 次 `.app -- --replay=…s03-solution.json` 全部 exit=0 WON；lifecycle_check exit=0。验收矩阵与 NOT_RUN 项：reports/desktop/ux/ux-acceptance.md。
+未解决问题与修复计划：结算屏截图 BLOCKED(环境：用户切换桌面 Space 致跨 Space 截图失败，报告/测试已证 WON)；UX01/UX04 主观手感待用户实玩；截图工具坑（activate 会拉起新实例、stdout 块缓冲、跨 Space 截图失败）已记录进验收报告供后续。
+下一步：等用户实玩确认手感（UX01/04）与逐项 UX 观感；用户确认后再提交 git（工作区 28 文件 dirty 未提交）。

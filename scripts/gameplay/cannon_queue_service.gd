@@ -10,8 +10,9 @@ const COLUMN_COUNT := 5
 const AMMO_MIN := 30
 const AMMO_MAX := 80
 
-# CannonState.state 取值（QUEUED/LOADING/READY/WAITING_TARGET/FIRING/RETURN_PENDING/DRAINING）
+# CannonState.state 取值（QUEUED/LOADING/READY/WAITING_TARGET/FIRING/RETURN_PENDING/DRAINING/RETIRING）
 # 注：FM 2026-10-26 任务曾移除取回流程；用户同日决定保留取回以便测试。
+# 2026-10-27 P2/P3：LOADING 成为真实逻辑阶段（到位才注册开火）；RETIRING=耗尽退场动画期。
 const STATE_QUEUED := "QUEUED"
 const STATE_LOADING := "LOADING"
 const STATE_READY := "READY"
@@ -19,6 +20,7 @@ const STATE_WAITING_TARGET := "WAITING_TARGET"
 const STATE_FIRING := "FIRING"
 const STATE_RETURN_PENDING := "RETURN_PENDING"
 const STATE_DRAINING := "DRAINING"
+const STATE_RETIRING := "RETIRING"
 
 
 # 单色拆分：返回弹数数组，总和 == total。total<=0 返回空；total<=80 单炮（<30 视为余数炮）。

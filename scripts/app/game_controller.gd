@@ -48,6 +48,7 @@ var _rng := RandomNumberGenerator.new()
 var _generation := 0
 var _event_id := 0
 var _tick := 0
+var _sim_time := 0.0  # P4：累计模拟秒（选靶负缓存 TTL 用模拟时钟，headless 快进不失真）
 var _shot_seq := 0
 var _stopped := true   # 无活跃会话/已停止时不推进
 var _paused := false   # 退后台暂停调度与物理推进
@@ -65,6 +66,7 @@ func start_level(level_config_path: String, restore_snapshot: Dictionary = {}) -
 		return result
 	_generation += 1
 	_tick = 0
+	_sim_time = 0.0
 	_shot_seq = 0
 	_stopped = false
 	_paused = false
@@ -176,6 +178,16 @@ func start_level(level_config_path: String, restore_snapshot: Dictionary = {}) -
 	target_selector = TargetSelectorScript.new()
 	target_selector.setup(voxel_manager, rules.ball_radius)
 
+	# 2026-10-27 P1：切局重置视角与手势渐入状态——默认正面（yaw=PI，模型本地 -Z 朝相机）、
+	# pitch=0；旧存档没有姿态字段时即此默认值（不存/不恢复任意含侧倾的 Basis）
+	_view_yaw = PI
+	_view_pitch = 0.0
+	_pending_dyaw = 0.0
+	_pending_dpitch = 0.0
+	_rotation_hold = false
+	_auto_rot_ease = 0.0
+	_apply_view_orientation()
+
 	bus.set_generation(session.level_id, session.session_generation)
 	bus.publish("level_loaded", [session.level_id], _meta())
 	return {"ok": true}
@@ -205,12 +217,97 @@ func place_front(column_id: int) -> Dictionary:
 		return {"ok": false, "reason": "slots_full"}
 	PoolService.pop_front(session, column_id)
 	var t: Dictionary = session.turrets[tid]
-	t.state = PoolService.STATE_READY  # LOADING 动画为表现层职责，逻辑即就绪
-	auto_fire.register(tid)
+	# 2026-10-27 P2：真 LOADING 阶段——模拟时钟走完才 READY+注册开火（方案 §4.1）。
+	# 不依赖 Tween 回调推进业务（窗口隐藏/动画被杀/headless 都不会卡 LOADING）。
+	t.state = PoolService.STATE_LOADING
+	t["loading_remaining"] = LOADING_SEC
 	bus.publish("queue_changed", ["place", column_id, tid], _meta())
 	bus.publish("slots_changed", [slot, tid], _meta())
 	_evaluate_outcome()
 	return {"ok": true, "turret_id": tid, "slot": slot}
+
+
+# --- 2026-10-27 P2/P3 过渡时钟（上位 LOADING / 耗尽 RETIRING，模拟时间驱动）---
+
+const LOADING_SEC := 0.28  # 上位总时长（移动≈0.24s + 到位回弹由表现层叠加）
+const RETIRE_SEC := 0.20   # 耗尽退场（收缩至 ~0.15 + 淡出）
+
+
+# LOADING 进度（表现层过渡动画驱动用）：0→1；非 LOADING 返回 -1
+func loading_progress(turret_id: int) -> float:
+	var t: Dictionary = session.turrets.get(turret_id, {}) if session != null else {}
+	if t.is_empty() or t.state != PoolService.STATE_LOADING:
+		return -1.0
+	return 1.0 - clampf(float(t.get("loading_remaining", 0.0)) / LOADING_SEC, 0.0, 1.0)
+
+
+# RETIRING 进度：0→1；非 RETIRING 返回 -1
+func retire_progress(turret_id: int) -> float:
+	var t: Dictionary = session.turrets.get(turret_id, {}) if session != null else {}
+	if t.is_empty() or t.state != PoolService.STATE_RETIRING:
+		return -1.0
+	return 1.0 - clampf(float(t.get("retire_remaining", 0.0)) / RETIRE_SEC, 0.0, 1.0)
+
+
+# 是否还有 RETIRING 炮台未退场完（HUD 胜利遮罩延后用）
+func retiring_active() -> bool:
+	if session == null:
+		return false
+	for tid in session.turrets:
+		if session.turrets[tid].state == PoolService.STATE_RETIRING:
+			return true
+	return false
+
+
+# 过渡时钟推进：LOADING 到点转 READY+注册开火；RETIRING 到点释放槽位并删除炮台。
+# 由 step() 驱动（玩法步与终局后都推进），与暂停/离场一起冻结——表现层 Tween 只表现不推进业务。
+func _tick_transitions(dt: float) -> void:
+	var ready_ids: Array = []
+	var retired_ids: Array = []
+	for tid in session.turrets:
+		var t: Dictionary = session.turrets[tid]
+		if t.state == PoolService.STATE_LOADING:
+			t["loading_remaining"] = float(t.get("loading_remaining", 0.0)) - dt
+			if float(t.loading_remaining) <= 0.0:
+				ready_ids.append(int(tid))
+		elif t.state == PoolService.STATE_RETIRING:
+			t["retire_remaining"] = float(t.get("retire_remaining", 0.0)) - dt
+			if float(t.retire_remaining) <= 0.0:
+				retired_ids.append(int(tid))
+	for tid in ready_ids:
+		var t: Dictionary = session.turrets.get(tid, {})
+		if t.is_empty() or t.state != PoolService.STATE_LOADING:
+			continue  # 同期被取回/清理：幂等跳过
+		t.erase("loading_remaining")
+		t.state = PoolService.STATE_READY
+		auto_fire.register(tid)
+		bus.publish("turret_ready", [tid, SlotService.slot_index_of(session, tid)], _meta())
+		bus.publish("turret_state_changed", [tid, t.state], _meta())
+	for tid in retired_ids:
+		var t: Dictionary = session.turrets.get(tid, {})
+		if t.is_empty() or t.state != PoolService.STATE_RETIRING:
+			continue
+		var slot := SlotService.slot_index_of(session, tid)
+		if slot >= 0:
+			SlotService.remove_at(session, slot)
+		session.turrets.erase(tid)  # 弹药耗尽的炮台彻底离场（守恒：弹药已转移为 D）
+		bus.publish("slots_changed", [slot, -1], _meta())
+		bus.publish("retire_finished", [tid, slot], _meta())
+
+
+# 耗尽退场入口：弹量 0 且在途 0 → RETIRING（保留槽位至动画播完，不与下一门重叠）
+func _begin_retire(turret_id: int) -> void:
+	var t: Dictionary = session.turrets.get(turret_id, {})
+	if t.is_empty() or t.state == PoolService.STATE_RETIRING:
+		return
+	t.state = PoolService.STATE_RETIRING
+	t["retire_remaining"] = RETIRE_SEC
+	auto_fire.unregister(turret_id)
+	var slot := SlotService.slot_index_of(session, turret_id)
+	# retire_started 携带不可变视觉快照（颜色/弹药），refresh 据此区分 RETIRING 而非立刻 empty
+	bus.publish("retire_started", [turret_id, slot,
+		{"color_id": int(t.color_id), "ammo_remaining": int(t.ammo_remaining)}], _meta())
+	bus.publish("turret_state_changed", [turret_id, t.state], _meta())
 
 
 # 取回：允许取回"没有在途弹"的炮台（即使发射过）；有在途弹先停新发射，结算后取回。
@@ -225,6 +322,11 @@ func return_turret(slot_index: int) -> Dictionary:
 	var t: Dictionary = session.turrets.get(tid, {})
 	if t.is_empty():
 		return {"ok": false, "reason": "missing_turret"}
+	# 2026-10-27 P2/P3：上位中短暂拒绝（提示"上位中"，到位后可取回）；退场中同样拒绝
+	if t.state == PoolService.STATE_LOADING:
+		return {"ok": false, "reason": "loading"}
+	if t.state == PoolService.STATE_RETIRING:
+		return {"ok": false, "reason": "retiring"}
 	if int(t.get("in_flight", 0)) > 0:
 		# 有在途弹：停止新发射，标记待取回，结算/返还后完成（_settle_return_pending）
 		if t.state != PoolService.STATE_RETURN_PENDING:
@@ -232,6 +334,10 @@ func return_turret(slot_index: int) -> Dictionary:
 			auto_fire.unregister(tid)
 			bus.publish("turret_state_changed", [tid, t.state], _meta())
 		return {"ok": true, "pending": true, "turret_id": tid}
+	# P3：零弹炮台取回=退场删除（依据 ammo/in_flight 真实数值，不看 DRAINING 字符串），不回队列
+	if int(t.ammo_remaining) <= 0:
+		_begin_retire(tid)
+		return {"ok": true, "pending": false, "turret_id": tid, "retired": true}
 	_do_return_to_column(slot_index, tid)
 	return {"ok": true, "pending": false, "turret_id": tid}
 
@@ -247,12 +353,16 @@ func _do_return_to_column(slot_index: int, turret_id: int) -> void:
 	_evaluate_outcome()
 
 
-# RETURN_PENDING 炮台的在途弹全部结算后完成取回（命中/取消路径调用）
+# RETURN_PENDING 炮台的在途弹全部结算后完成取回（命中/取消路径调用）。
+# P3：最终结算为零弹时进入退场并删除，不回队列（UX08）。
 func _settle_return_pending(turret_id: int) -> void:
 	var t: Dictionary = session.turrets.get(turret_id, {})
 	if t.is_empty() or t.state != PoolService.STATE_RETURN_PENDING:
 		return
 	if int(t.get("in_flight", 0)) > 0:
+		return
+	if int(t.ammo_remaining) <= 0:
+		_begin_retire(turret_id)
 		return
 	var slot := SlotService.slot_index_of(session, turret_id)
 	if slot >= 0:
@@ -272,6 +382,9 @@ func try_auto_fire(slot_index: int) -> Dictionary:
 	var t: Dictionary = session.turrets.get(tid, {})
 	if t.is_empty():
 		return {"ok": false, "reason": "missing_turret"}
+	# P2：LOADING 未到位不开火（正常路径下调度器在 READY 才注册，此处为防御闸门）
+	if t.state == PoolService.STATE_LOADING:
+		return {"ok": false, "reason": "loading"}
 	if int(t.ammo_remaining) <= 0:
 		return {"ok": false, "reason": "no_ammo"}
 	if int(t.get("in_flight", 0)) >= rules.max_in_flight_per_turret:
@@ -302,6 +415,14 @@ func try_auto_fire(slot_index: int) -> Dictionary:
 			reason = "waiting_target"
 		fire_stats.on_wait(reason)
 		return {"ok": false, "reason": reason}
+	# P4 §6.3 最终复核：分片扫描的成功候选锚定开扫原点（origin0），持续旋转下与本次
+	# 真实炮口不同——提交预订/扣弹前用当前原点对同一 aim_grid_point 复核；失败则
+	# 不扣弹、不播放开火，下一物理步续扫重找（调度器按 scan_pending 同档处理）。
+	if target.get("origin_used", o.origin_grid) != o.origin_grid:
+		if not target_selector.confirm_aim(int(target.voxel_id),
+				target.aim_grid_point as Vector3, o.origin_grid):
+			fire_stats.on_wait("revalidate_failed")
+			return {"ok": false, "reason": "revalidate_failed"}
 	return _fire_at(slot_index, tid, t, o, target)
 
 
@@ -315,10 +436,14 @@ func _fire_at(slot_index: int, tid: int, t: Dictionary, origin: Dictionary, targ
 		return {"ok": false, "reason": "reserve_failed"}  # 被并发预订：下周期重试，不扣弹
 	# FM §4：模型局部格空间锁定弹道——出膛原点/方向都在格空间确定，
 	# 之后模型旋转只影响显示投影，不改变已锁定弹道（旋转中仍命中预订目标）。
+	# P4 §6.2：弹道方向/预订/发射快照统一使用选靶给出的 aim_grid_point（暴露面
+	# 多点确认通过的同一个点），绝不换回体素中心（中心可能正是被遮挡的那条路径）。
 	var wfg: Transform3D = voxel_model.world_from_grid()
 	var local_origin: Vector3 = origin.get("origin_grid",
 		wfg.affine_inverse() * (origin.origin as Vector3))
-	var local_dir: Vector3 = (target.target_grid_center as Vector3) - local_origin
+	var aim_point: Vector3 = target.get("aim_grid_point", target.target_grid_center)
+	var local_dir: Vector3 = aim_point - local_origin
+	booked.ticket["aim_grid_point"] = aim_point  # 票据携带瞄点：HUD 炮管瞄准同点
 	if local_dir.length_squared() < 0.25:
 		shot_ledger.settle_cancel(_shot_seq)
 		return {"ok": false, "reason": "bad_direction"}
@@ -342,6 +467,8 @@ func _fire_at(slot_index: int, tid: int, t: Dictionary, origin: Dictionary, targ
 		t.state = PoolService.STATE_FIRING
 	var fired_snapshot: Dictionary = t.duplicate(true)
 	fired_snapshot["target_voxel_id"] = int(target.voxel_id)
+	fired_snapshot["aim_grid_point"] = aim_point  # P4：发射快照与弹道同瞄点
+	fired_snapshot["face_id"] = int(target.get("face_id", -1))
 	fire_stats.on_fire()
 	bus.publish("turret_fire", [fired_snapshot, ball_id], _meta())
 	_evaluate_outcome()
@@ -402,7 +529,9 @@ func designated_select_voxel(screen: Vector2, camera: Camera3D) -> Dictionary:
 	if origin_resolver.is_null():
 		return {"ok": false, "reason": "no_origin_resolver"}
 	var o: Dictionary = origin_resolver.call(_designated_slot)
-	if not o.get("ok", false) or not target_selector.confirm_reachable(vid, o.origin_grid):
+	# P4 §6.3：指定目标与普通选靶同一多点确认接口（中心被挡时暴露面采样点可达即合法）
+	if not o.get("ok", false) \
+			or not target_selector.confirm_reachable_mp(vid, o.origin_grid).get("ok", false):
 		return {"ok": false, "reason": "unreachable"}    # 不可达不扣次
 	# 合法选择被接受：此时才扣次（CQ §2.4）
 	t["designated_target"] = vid
@@ -429,10 +558,14 @@ func _designated_target_for(t: Dictionary, o: Dictionary) -> Dictionary:
 	var dvid := int(t.get("designated_target", -1))
 	if dvid < 0:
 		return {}
-	if voxel_manager.is_alive(dvid) and shot_ledger.is_available(dvid) \
-			and target_selector.confirm_reachable(dvid, o.origin_grid):
-		return {"ok": true, "voxel_id": dvid,
-			"target_grid_center": voxel_manager.data.positions[dvid] + Vector3(0.5, 0.5, 0.5)}
+	if voxel_manager.is_alive(dvid) and shot_ledger.is_available(dvid):
+		# P4 §6.3：多点确认（与普通选靶同一标准），瞄点随结果一路流向弹道/炮管/快照
+		var dc: Dictionary = target_selector.confirm_reachable_mp(dvid, o.origin_grid)
+		if dc.get("ok", false):
+			return {"ok": true, "voxel_id": dvid,
+				"target_grid_center": voxel_manager.data.positions[dvid] + Vector3(0.5, 0.5, 0.5),
+				"aim_grid_point": dc.aim_grid_point, "face_id": int(dc.face_id),
+				"origin_used": o.origin_grid}
 	t["designated_target"] = -1
 	bus.publish("designated_expired", [int(t.turret_id)], _meta())
 	return {}
@@ -507,7 +640,9 @@ func _refund_ticket(ticket: Dictionary, reason: String) -> void:
 		int(ticket.target_voxel_id)], _meta())
 
 
-# 票据结算后的槽位收尾：F--；归零炮台最后一发结算完成才移除；RETURN_PENDING 收尾
+# 票据结算后的槽位收尾：F--；归零炮台最后一发结算完成才进入 RETIRING 退场；
+# RETURN_PENDING 收尾（零弹退场、有弹回队列）。
+# P3：收尾条件依据 ammo/in_flight 真实数值，不只看状态字符串（RETURN_PENDING 可覆盖 DRAINING）。
 func _settle_ticket(ticket: Dictionary, _refunded: bool) -> void:
 	var tid := int(ticket.turret_id)
 	if not session.turrets.has(tid):
@@ -515,16 +650,14 @@ func _settle_ticket(ticket: Dictionary, _refunded: bool) -> void:
 	var t: Dictionary = session.turrets[tid]
 	t["in_flight"] = maxi(0, int(t.get("in_flight", 0)) - 1)  # F--
 	if int(t.get("in_flight", 0)) > 0:
+		return  # 等在途全部结算（DRAINING 保持炮台，不提前退场）
+	if t.state == PoolService.STATE_RETURN_PENDING:
+		_settle_return_pending(tid)  # 内部按 ammo 决定回队列还是退场
 		return
-	if t.state == PoolService.STATE_DRAINING:
-		var slot := SlotService.slot_index_of(session, tid)
-		if slot >= 0:
-			SlotService.remove_at(session, slot)
-			session.turrets.erase(tid)  # 弹药耗尽的炮台彻底离场（守恒：弹药已转移为 D）
-			bus.publish("slots_changed", [slot, -1], _meta())
+	if int(t.ammo_remaining) <= 0:
+		_begin_retire(tid)  # 耗尽：RETIRING 收缩淡出后才释放槽位（替代旧瞬间消失）
 	elif t.state == PoolService.STATE_FIRING:
 		t.state = PoolService.STATE_READY
-	_settle_return_pending(tid)
 
 
 # --- CQ-20261026 §2.4 合成（显式模式内两列列首，HUD 控制进入） ---
@@ -561,15 +694,24 @@ func set_paused(paused: bool) -> void:
 	_paused = paused
 
 
-# --- FM §11 自动旋转：青蛙绕模型中心固定世界 +Y 轴俯视逆时针缓慢持续旋转 ---
-# 手动按住拖动立即暂停（手动全胜）；松手从当前姿态 0.2s 渐入接续，不回弹不补转不清俯仰。
-# 指定目标选择中暂停；暂停/离场/结算由 is_running() 门天然冻结；无离线补转。
+# --- 2026-10-27 P1 旋转：控制器唯一 yaw/pitch 状态（交互打磨方案 §3）---
+# 显示姿态 B = Rx(pitch) × Ry(yaw)：模型竖直轴的屏幕水平分量不随 yaw 积累侧倾；
+# 上下拖调俯仰、左右拖改变转台方位，侧面朝向拖下不再倒立（方案 §2 公式层证据）。
+# 手动俯仰后 Rx 外层使 yaw 轴相应倾斜，故"自动旋转绕固定世界 +Y"的旧约束放宽为
+# "沿同一 yaw 轴慢速连续俯视逆时针，保持当前 pitch"（pitch=0 时与旧行为等价）。
+# 手势路由只上报原始像素位移（main 按视口换算弧度），输入在 step() 顶部统一应用——
+# 渲染帧不另写 Basis，物理与画面同一姿态；切局重置手势与渐入状态。
 
 var auto_rotate_enabled := true   # 验收默认开启；测试可关
 var _rotation_hold := false       # 模型区指针被手势路由持有（main 注入）
 var _auto_rot_ease := 0.0         # 松手渐入系数 0→1
+var _view_yaw := PI               # 转台方位（连续跨 360°，归一化仅数值稳定；PI=正面朝相机）
+var _view_pitch := 0.0            # 俯仰（钳制 ±VIEW_PITCH_LIMIT，越界部分丢弃、反向立即响应）
+var _pending_dyaw := 0.0          # 本步待应用的手动偏航增量（弧度）
+var _pending_dpitch := 0.0        # 本步待应用的手动俯仰增量（弧度）
 
 const AUTO_ROT_EASE_SEC := 0.2
+const VIEW_PITCH_LIMIT := 1.0472  # ±60°（方案 §3.2 建议初值，手感验收后可调）
 
 
 func set_rotation_hold(hold: bool) -> void:
@@ -580,19 +722,53 @@ func is_rotation_held() -> bool:
 	return _rotation_hold
 
 
-func _apply_auto_rotation(dt: float) -> void:
-	if not auto_rotate_enabled:
+# 手势输入入队：同一物理步统一应用（不即写 Basis，渲染/物理不分裂）
+func queue_view_input(dyaw: float, dpitch: float) -> void:
+	_pending_dyaw += dyaw
+	_pending_dpitch += dpitch
+
+
+# 直接设定姿态（切局校准、测试复现用）；走唯一 set_orientation 写入口
+func set_view_pose(yaw: float, pitch: float) -> void:
+	_view_yaw = wrapf(yaw, -PI, PI)
+	_view_pitch = clampf(pitch, -VIEW_PITCH_LIMIT, VIEW_PITCH_LIMIT)
+	_apply_view_orientation()
+
+
+func view_angles() -> Vector2:
+	return Vector2(_view_yaw, _view_pitch)
+
+
+func _apply_view_rotation(dt: float) -> void:
+	if session == null or voxel_model == null:
 		return
-	if _rotation_hold or bool(session.pending_effects.get("designated_selecting", false)):
+	var dyaw := _pending_dyaw
+	var dpitch := _pending_dpitch
+	_pending_dyaw = 0.0
+	_pending_dpitch = 0.0
+	# 自动旋转：沿同一 yaw 轴（随 pitch 倾斜）俯视逆时针；手动按住/指定选择中暂停，
+	# 松手 0.2s 渐入从当前姿态接续，不跳角不补转不清俯仰
+	if auto_rotate_enabled and not _rotation_hold \
+			and not bool(session.pending_effects.get("designated_selecting", false)):
+		_auto_rot_ease = minf(_auto_rot_ease + dt / AUTO_ROT_EASE_SEC, 1.0)
+		# +Y 右手系正角 = 俯视逆时针（符号由 test_auto_rotation 俯视探针核验）
+		dyaw += deg_to_rad(rules.auto_rot_deg_per_sec * _auto_rot_ease * dt)
+	else:
 		_auto_rot_ease = 0.0
+	if dyaw == 0.0 and dpitch == 0.0:
 		return
-	_auto_rot_ease = minf(_auto_rot_ease + dt / AUTO_ROT_EASE_SEC, 1.0)
-	if _auto_rot_ease <= 0.0:
+	_view_yaw = wrapf(_view_yaw + dyaw, -PI, PI)
+	_view_pitch = clampf(_view_pitch + dpitch, -VIEW_PITCH_LIMIT, VIEW_PITCH_LIMIT)
+	_apply_view_orientation()
+
+
+func _apply_view_orientation() -> void:
+	if voxel_model == null:
 		return
-	# +Y 右手系正角 = 俯视逆时针（FM §11；符号由 test_auto_rotation 俯视探针核验）
-	var delta := Basis(Vector3.UP, deg_to_rad(rules.auto_rot_deg_per_sec * _auto_rot_ease * dt))
-	var cur: Basis = voxel_model.global_transform.basis
-	voxel_model.set_orientation(delta * cur)
+	# B = Rx(pitch) × Ry(yaw)（顺序不可换：外层 Rx 保证任意 yaw 下上下拖都是屏幕俯仰）
+	voxel_model.set_orientation(
+		Basis(Quaternion(Vector3.RIGHT, _view_pitch))
+		* Basis(Quaternion(Vector3.UP, _view_yaw)))
 
 
 # 自动旋转的当前等效角速度（°/s，验收/测试读数用）
@@ -609,12 +785,21 @@ func is_running() -> bool:
 # --- 帧驱动：超时取消 → 自动连发调度 → 物理步进 → 连击计时/胜负 ---
 
 func step(dt: float) -> void:
-	if not is_running():
+	if _stopped or _paused or session == null:
+		return
+	if session.outcome != "RUNNING":
+		# P3：终局后只收尾过渡时钟（RETIRING 播完/LOADING 落地），不推进玩法、不重开射击
+		_tick_transitions(dt)
 		return
 	_tick += 1
-	# FM §11：自动旋转在每步选靶/推进之前应用，每步至多一次 transform_version 递增
-	_apply_auto_rotation(dt)
+	_sim_time += dt
+	# P1：手动输入 + 自动旋转在每步选靶/推进之前统一应用，每步至多一次 transform_version 递增
+	_apply_view_rotation(dt)
+	# P2/P3：上位/退场时钟与玩法同一模拟步（先于调度：本步落地的炮台当步即可开火）
+	_tick_transitions(dt)
 	target_selector.set_transform_version(voxel_model.transform_version)
+	target_selector.set_clock(_sim_time)   # P4：负缓存 TTL（模拟秒）
+	target_selector.begin_step()           # P4：本步全局选靶预算（所有炮台共享）
 	fire_stats.advance(dt)  # 有效局时时钟（暂停不计入）
 	# CQ §2.3：在途弹超时取消返还（默认 3s）
 	for ticket in shot_ledger.advance_time(dt, SHOT_TIMEOUT_SEC):
@@ -682,6 +867,18 @@ func save_session() -> Dictionary:
 			if int(t.ball_id) > 0:
 				ball_physics.system.end_ball(int(t.ball_id))
 			_refund_ticket(t, "save_settle")
+	# 2026-10-27 P2/P3 存档归一（方案 §4.3/§5）：LOADING 归一为 READY（恢复不重播上位）、
+	# RETIRING 原子完成（释放零弹炮）——恢复后不出现幽灵槽/卡 LOADING/重复出列
+	for tid in session.turrets.keys():
+		var t: Dictionary = session.turrets[tid]
+		if t.state == PoolService.STATE_LOADING:
+			t.erase("loading_remaining")
+			t.state = PoolService.STATE_READY
+		elif t.state == PoolService.STATE_RETIRING:
+			var slot := SlotService.slot_index_of(session, int(tid))
+			if slot >= 0:
+				SlotService.remove_at(session, slot)
+			session.turrets.erase(tid)  # 零弹炮：守恒不受影响（弹药已为 0）
 	session.alive_voxel_ids = voxel_manager.state.alive_ids()
 	session.rng_state = _rng.state  # CQ/S09：RNG 完整状态随档
 	return LevelRepositoryScript.save(session.to_snapshot())
@@ -699,8 +896,9 @@ func _hash_model(data: RefCounted) -> String:
 
 
 # FM/F3/F4：炮台状态白名单（非法状态坏档拒绝恢复，走备份重开路径）
+# 2026-10-27 P3：+RETIRING（保存时已原子完成，正常不会出现；白名单放行以兼容手工档）
 const VALID_TURRET_STATES := ["QUEUED", "LOADING", "READY", "WAITING_TARGET", "FIRING",
-	"RETURN_PENDING", "DRAINING"]
+	"RETURN_PENDING", "DRAINING", "RETIRING"]
 
 
 # CQ/S09 §1：恢复校验已迁移为 LevelSession.validate_snapshot 纯函数（FM/F4 原子恢复：先校验后 mutate）

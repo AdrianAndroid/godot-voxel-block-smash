@@ -110,7 +110,12 @@ static func validate_snapshot(snap: Dictionary, level_id: String, model_count: i
 		return {"ok": false, "error": "bad_version:%s" % str(snap.get("version"))}
 	if str(snap.get("level_id", "")) != level_id:
 		return {"ok": false, "error": "level_mismatch"}
-	var turrets: Dictionary = snap.get("turrets", {})
+	# 2026-10-27 §9 修复：磁盘 JSON 读回后 turrets 键是 String（JSON.parse_string 行为），
+	# restore() 的键归一化在本校验之后执行，故这里先把键归一化为 int，
+	# 否则 queue/slot 引用检查（has(int)）对真实存档恒 false，中局存档永远无法恢复。
+	var turrets := {}
+	for _k in snap.get("turrets", {}):
+		turrets[int(_k)] = snap.get("turrets", {})[_k]
 	var queue_columns: Array = snap.get("queue_columns", [])
 	var slots: Array = snap.get("slots", [])
 	var alive: Array = snap.get("alive_voxel_ids", [])

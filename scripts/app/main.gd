@@ -23,6 +23,8 @@ var _current_level_id := ""
 var _input_enabled := false  # §3：会话切换期间禁用输入
 var _press_pos := Vector2.ZERO   # CQ/S08：点击/拖拽判别（指定目标点选 vs 旋转，12px 阈值）
 var _press_moved := false
+var _yaw_sens := 0.01    # P1：弧度/像素（_frame_model 按视口宽设为 PI/宽，横扫≈180°）
+var _pitch_sens := 0.01  # P1：弧度/像素（模型区纵扫≈120°）
 
 
 func _ready() -> void:
@@ -78,7 +80,11 @@ func enter_level(level_id: String, restore: Dictionary = {}) -> void:
 		var err := str(res.get("error", ""))
 		if not restore.is_empty():
 			var bak: String = LevelRepository.backup_save(level_id)
-			print("[save] 存档不可用（%s），已备份 %s，本关重新开始" % [err, bak])
+			if bak.is_empty():
+				push_warning("[save] 坏档备份失败（原档仍在）：" + level_id)
+				print("[save] 存档不可用（%s），备份失败（原档仍在），本关重新开始" % err)
+			else:
+				print("[save] 存档不可用（%s），已备份 %s，本关重新开始" % [err, bak])
 			enter_level(level_id)  # 全新会话重开
 			return
 		push_error("关卡启动失败: " + err)
@@ -120,8 +126,10 @@ func _cleanup_session(save: bool) -> void:
 	_set_rot_hold(false)
 	if controller.session != null:
 		if save:
-			controller.save_session()
+			_save_checked()
 		controller.stop_session()  # 停止调度与物理推进
+	if hud != null:
+		hud.clear_transitions()  # P2/P3：重开/返回取消旧上位/退场视觉对象
 	effects.clear()
 	marbles.clear()
 	audio.stop_all()
@@ -144,7 +152,15 @@ func _on_level_chosen(level_id: String) -> void:
 
 
 func _on_level_end(_args: Array, _meta: Dictionary) -> void:
-	controller.save_session()
+	_save_checked()
+
+
+# 2026-10-27 §9：保存返回值必须检查——写档失败（磁盘满/权限）不能静默丢进度
+func _save_checked() -> void:
+	var r: Dictionary = controller.save_session()
+	if not r.get("ok", false):
+		push_warning("[save] 保存失败: %s" % str(r.get("error", "unknown")))
+		print("[save] 保存失败: %s" % str(r.get("error", "unknown")))
 
 
 # CQ-20261026/S05+S06：发射原点契约收敛到 FireGeometry（运行时与离线验证器同一实现）。
@@ -226,23 +242,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		_apply_rotation(rot2)
 
 
-# CQ-20261026/S02：跟手旋转——相机空间增量四元数（每步绕当前相机 up/right 轴旋转），
-# 替代本地欧拉角累加（后者不同朝向下轴向翻转、符号与屏幕方向相反）。
-# 小增量绕屏幕轴旋转保证任意朝向下前表面随手指同向移动；俯仰限制 ±70°，越界只保留偏航分量。
-func _apply_rotation(rot: Vector2) -> void:
-	if rot == Vector2.ZERO or controller.voxel_model == null or camera == null:
+# 2026-10-27 P1（方案 §3）：拖动输入=原始像素位移 × 分轴灵敏度 → 入队控制器唯一
+# yaw/pitch 状态，姿态在物理步顶部统一重建（B=Rx(pitch)×Ry(yaw)）。
+# 表现层不再累乘 Basis（旧实现交替拖动积累侧倾、侧面拖下可倒立、边界吞整段输入）。
+func _apply_rotation(rot_px: Vector2) -> void:
+	if rot_px == Vector2.ZERO or controller.session == null:
 		return
-	var up: Vector3 = camera.global_transform.basis.y.normalized()
-	var right: Vector3 = camera.global_transform.basis.x.normalized()
-	var basis: Basis = controller.voxel_model.global_transform.basis
-	var candidate := Basis(Quaternion(up, rot.x) * Quaternion(right, rot.y)) * basis
-	# 俯仰角=模型前方轴（本地 -Z）相对相机竖直轴的倾角
-	var tilt_now: float = asin(clampf((basis * Vector3(0, 0, -1)).normalized().dot(up), -1.0, 1.0))
-	var tilt_new: float = asin(clampf((candidate * Vector3(0, 0, -1)).normalized().dot(up), -1.0, 1.0))
-	const PITCH_LIMIT := 1.2217  # ±70°
-	if absf(tilt_new) > PITCH_LIMIT and absf(tilt_new) > absf(tilt_now):
-		candidate = Basis(Quaternion(up, rot.x)) * basis  # 越过边界：只偏航
-	controller.voxel_model.set_orientation(candidate)  # FM §11：唯一写入口（transform_version++）
+	controller.queue_view_input(rot_px.x * _yaw_sens, rot_px.y * _pitch_sens)
 
 
 # CQ-20261026/S02：相机按模型包围球拟合距离（旋转包络 8% 留白），
@@ -262,21 +268,23 @@ func _frame_model() -> void:
 	var up_shift: float = 0.16 * 2.0 * d * tan(vfov * 0.5)
 	camera.global_transform = Transform3D(Basis.IDENTITY, Vector3(0, -up_shift, d))
 	camera.rotation = Vector3.ZERO  # 直立：up=+Y、right=+X
-	router.sensitivity = PI / get_viewport().get_visible_rect().size.x  # 横扫全宽≈180°
-	# 初始姿态：青蛙正面（模型本地 -Z）转向相机（相机在 +Z）
-	controller.voxel_model.set_orientation(Basis(Quaternion(Vector3.UP, PI)))
+	# P1 §3.2：分轴灵敏度按视口逻辑尺寸归一化——横扫全宽≈180°、纵扫模型区高（46%屏高）≈120°
+	var vp: Vector2 = get_viewport().get_visible_rect().size
+	_yaw_sens = PI / vp.x
+	_pitch_sens = deg_to_rad(120.0) / (0.46 * vp.y)
+	# 初始姿态由 controller.start_level 重置（yaw=PI 正面朝相机、pitch=0），此处不重复写 Basis
 
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST and controller.session != null:
-		controller.save_session()
+		_save_checked()
 		controller.recorder.close()
 	elif what == NOTIFICATION_APPLICATION_PAUSED:
 		router.cancel_all()  # 退后台丢弃进行中的手势
 		_set_rot_hold(false)
 		if controller.session != null:
 			controller.set_paused(true)   # 【新增代码】§10：冻结自动连发，恢复不补发
-			controller.save_session()     # Android 退后台即落盘（G15）
+			_save_checked()               # Android 退后台即落盘（G15）
 			controller.recorder.close()
 	elif what == NOTIFICATION_APPLICATION_RESUMED:
 		# FM/F4：用户手动暂停（暂停遮罩可见）不被后台恢复冲掉

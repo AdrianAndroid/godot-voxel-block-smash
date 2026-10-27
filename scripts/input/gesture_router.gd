@@ -1,13 +1,12 @@
 extends RefCounted
 
 # 手势路由（架构 v6：仅模型空白区起始指针产生旋转意图；UI 起始永不旋转；取消/失焦清空；中心不漂移）
-# 阶段：阶段3。D06 默认：单指拖拽、0.01 弧度/像素、多指只认首指
+# 阶段：阶段3。D06 默认：单指拖拽、多指只认首指
+# 2026-10-27 P1（交互打磨方案 §3.1）：只提供已归属指针的原始像素位移/按下释放，
+# 不再维护内部角度/灵敏度/俯仰钳制——唯一姿态状态在 GameController（yaw/pitch），
+# 弧度换算（分轴灵敏度）在 main，姿态钳制与应用在控制器 step() 顶部统一执行。
 
-var sensitivity := 0.01  # 弧度/像素；CQ-20261026/S02：main 按展示区宽度设为 PI/宽度（横扫≈180°）
-var pitch_limit := 1.2217  # CQ-20261026/S02：俯仰限制 ±70°（原 ±1.4rad≈80°）
 var mutex: RefCounted    # InputMutex
-var _yaw := 0.0
-var _pitch := 0.0
 var _active_pointer := -1
 
 
@@ -29,14 +28,11 @@ func handle_press(pointer_id: int, over_ui: bool) -> bool:
 	return false
 
 
-# 拖动：返回 (yaw_delta, pitch_delta)；非旋转指针返回零向量
+# 拖动：返回已归属旋转指针的原始像素位移；非旋转指针返回零向量（调用方负责灵敏度换算）
 func handle_drag(pointer_id: int, delta: Vector2) -> Vector2:
 	if pointer_id != _active_pointer or mutex.owner_of(pointer_id) != "model":
 		return Vector2.ZERO
-	var rot := Vector2(delta.x * sensitivity, delta.y * sensitivity)
-	_yaw += rot.x
-	_pitch = clampf(_pitch + rot.y, -pitch_limit, pitch_limit)
-	return rot
+	return delta
 
 
 func handle_release(pointer_id: int) -> void:
@@ -48,7 +44,3 @@ func handle_release(pointer_id: int) -> void:
 func cancel_all() -> void:
 	_active_pointer = -1
 	mutex.clear_all()
-
-
-func current_angles() -> Vector2:
-	return Vector2(_yaw, _pitch)
