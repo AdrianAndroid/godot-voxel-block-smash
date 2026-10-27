@@ -29,17 +29,17 @@ stateDiagram-v2
     RETIRING --> Removed: 0.20秒退场结束
 ```
 
-图为了讲核心链路省略 RETURN_PENDING 等支路，完整状态常量在 [scripts/gameplay/cannon_queue_service.gd:17](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/gameplay/cannon_queue_service.gd.txt:17)。状态图不是代码自动生成的形式化规格，阅读时必须回到真实条件，尤其不能凭字符串 DRAINING 就判断“该删除了”。
+图为了讲核心链路省略 RETURN_PENDING 等支路，完整状态常量在 [scripts/gameplay/cannon_queue_service.gd:17](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/gameplay/cannon_queue_service.gd.txt:17)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/gameplay/cannon_queue_service.gd#L17) · [仓库内快照](source-baseline/scripts/gameplay/cannon_queue_service.gd.txt)）。状态图不是代码自动生成的形式化规格，阅读时必须回到真实条件，尤其不能凭字符串 DRAINING 就判断“该删除了”。
 
-[scripts/app/game_controller.gd:232](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/app/game_controller.gd.txt:232) 定义 0.28 秒，RETIRE_SEC 为 0.20 秒。控制器通过 `_tick_transitions(dt)` 推进剩余时间，表现层读取 loading_progress 与 retire_progress。业务完成不依赖 Tween finished 回调，因为暂停、窗口隐藏、切场景或测试无界面都可能使视觉路径被打断。模拟时钟到点，业务仍能得到明确状态。
+[scripts/app/game_controller.gd:232](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/app/game_controller.gd.txt:232)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/app/game_controller.gd#L232) · [仓库内快照](source-baseline/scripts/app/game_controller.gd.txt)） 定义 0.28 秒，RETIRE_SEC 为 0.20 秒。控制器通过 `_tick_transitions(dt)` 推进剩余时间，表现层读取 loading_progress 与 retire_progress。业务完成不依赖 Tween finished 回调，因为暂停、窗口隐藏、切场景或测试无界面都可能使视觉路径被打断。模拟时钟到点，业务仍能得到明确状态。
 
-阅读 [scripts/presentation/hud_presenter.gd:699](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/presentation/hud_presenter.gd.txt:699)：取得源控件矩形应早于队列变更，否则 refresh 后“来源位置”可能已经是下一门炮。调用 place_front 成功后建立过渡视图。[scripts/presentation/hud_presenter.gd:726](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/presentation/hud_presenter.gd.txt:726) 保存来源、目标槽和炮台 ID，随当前进度更新；它不是在每次 HUD 刷新时重新创建 Tween。
+阅读 [scripts/presentation/hud_presenter.gd:699](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/presentation/hud_presenter.gd.txt:699)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/presentation/hud_presenter.gd#L699) · [仓库内快照](source-baseline/scripts/presentation/hud_presenter.gd.txt)）：取得源控件矩形应早于队列变更，否则 refresh 后“来源位置”可能已经是下一门炮。调用 place_front 成功后建立过渡视图。[scripts/presentation/hud_presenter.gd:726](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/presentation/hud_presenter.gd.txt:726)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/presentation/hud_presenter.gd#L726) · [仓库内快照](source-baseline/scripts/presentation/hud_presenter.gd.txt)） 保存来源、目标槽和炮台 ID，随当前进度更新；它不是在每次 HUD 刷新时重新创建 Tween。
 
 把动画分成三个可检查时段：起步时源处只有一门完整炮；中途过渡层中的炮移动、目标槽不提前冒出副本；落位后过渡对象销毁、槽位视图接管。动画曲线可以以后调，但这三个身份连续条件先成立。弹药数字也属于视觉身份，若炮身飞走数字留原地，仍然会显得卡顿。
 
 同一列短暂禁止重复上位，可以防止源视图正在补位时再次被取作起点；其他列不必全局锁死。跨列并行动画按 turret_id 管理，不应只用一个“当前上位 Tween”变量。重开时清理整套过渡，避免旧完成回调去操纵新局恰好相同槽号的炮台。会话代际与视觉对象生命周期共同决定安全性。
 
-退场入口 [scripts/app/game_controller.gd:299](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/app/game_controller.gd.txt:299) 发出包含颜色和弹量的快照。表现层可收缩到约 0.15 并淡出；控制器保留原槽直到剩余时间到点，再删除炮台和释放槽。若最后一块已消除，终局逻辑会停止普通玩法推进，但 step 仍需推进剩余退场时钟。否则最后一门炮永远卡在半透明状态，胜利遮罩也可能一直等不到。
+退场入口 [scripts/app/game_controller.gd:299](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/app/game_controller.gd.txt:299)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/app/game_controller.gd#L299) · [仓库内快照](source-baseline/scripts/app/game_controller.gd.txt)） 发出包含颜色和弹量的快照。表现层可收缩到约 0.15 并淡出；控制器保留原槽直到剩余时间到点，再删除炮台和释放槽。若最后一块已消除，终局逻辑会停止普通玩法推进，但 step 仍需推进剩余退场时钟。否则最后一门炮永远卡在半透明状态，胜利遮罩也可能一直等不到。
 
 取回支路是检验设计是否完整的好例子。玩家在最后几发飞行时点取回，炮台变 RETURN_PENDING，停止新发射但等待结算。若全部成功后弹药为零，进入退场；若有取消返还，带剩余弹药回来源列。以 ammo/in_flight 数值决定收尾，不能只判断原状态是否 DRAINING，因为它已经被取回状态覆盖了。
 

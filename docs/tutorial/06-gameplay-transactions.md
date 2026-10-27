@@ -10,23 +10,23 @@
 
 炮台 ID 对应颜色、剩余弹药、来源列、状态和在途数量。五列队列保存 ID 序列，五个槽位保存 ID 或空标记。炮台详细信息只保存在 turrets 字典，不应在队列和槽位各复制一份可变弹药。否则队列显示 80、槽位显示 79 时，你无法确定哪份是权威状态。
 
-[scripts/gameplay/cannon_queue_service.gd:27](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/gameplay/cannon_queue_service.gd.txt:27) 将每色总弹药拆成多门炮，再由 generate 分配进五列。拆分不能丢余数；一色 85 块不能只生成一门 80 发炮而忽略 5 发。炮台“常规范围 30～80”与尾炮余量规则要一起理解。使用固定种子有利于复现布局，但随机守恒不自动证明关卡一定可解，后面还需要解路径和真实回放验证。
+[scripts/gameplay/cannon_queue_service.gd:27](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/gameplay/cannon_queue_service.gd.txt:27)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/gameplay/cannon_queue_service.gd#L27) · [仓库内快照](source-baseline/scripts/gameplay/cannon_queue_service.gd.txt)） 将每色总弹药拆成多门炮，再由 generate 分配进五列。拆分不能丢余数；一色 85 块不能只生成一门 80 发炮而忽略 5 发。炮台“常规范围 30～80”与尾炮余量规则要一起理解。使用固定种子有利于复现布局，但随机守恒不自动证明关卡一定可解，后面还需要解路径和真实回放验证。
 
-槽位保持固定位置，[scripts/gameplay/slot_service.gd:26](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/gameplay/slot_service.gd.txt:26) 寻找最左空槽。中间炮台耗尽，不应该把右侧炮台整体左移，因为炮口对应的射线和玩家视觉记忆都会改变。队列补位是列内前移，槽位释放是原位置变空，两者不是同一种数组操作。
+槽位保持固定位置，[scripts/gameplay/slot_service.gd:26](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/gameplay/slot_service.gd.txt:26)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/gameplay/slot_service.gd#L26) · [仓库内快照](source-baseline/scripts/gameplay/slot_service.gd.txt)） 寻找最左空槽。中间炮台耗尽，不应该把右侧炮台整体左移，因为炮口对应的射线和玩家视觉记忆都会改变。队列补位是列内前移，槽位释放是原位置变空，两者不是同一种数组操作。
 
-票据（Ticket）记录一次发射的生命周期：哪门炮、哪个目标、哪种颜色、哪颗球、属于哪一代会话、当前是否结算。只有目标指针不够，因为两门炮可能同时看见同一块；第一门发射之后，该目标必须暂时对其他炮不可用。[scripts/gameplay/shot_ledger.gd:17](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/gameplay/shot_ledger.gd.txt:17) 用 reservations 建立目标到 shot_id 的唯一预订。
+票据（Ticket）记录一次发射的生命周期：哪门炮、哪个目标、哪种颜色、哪颗球、属于哪一代会话、当前是否结算。只有目标指针不够，因为两门炮可能同时看见同一块；第一门发射之后，该目标必须暂时对其他炮不可用。[scripts/gameplay/shot_ledger.gd:17](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/gameplay/shot_ledger.gd.txt:17)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/gameplay/shot_ledger.gd#L17) · [仓库内快照](source-baseline/scripts/gameplay/shot_ledger.gd.txt)） 用 reservations 建立目标到 shot_id 的唯一预订。
 
 ## 动手步骤：沿一笔事务走完整链路
 
-先读 [scripts/app/game_controller.gd:204](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/app/game_controller.gd.txt:204)。它检查关卡仍运行、列号有效、列首存在、槽位有空，然后先占槽再出列。这里的“原子”主要表示一次同步操作内成功一起改变、失败不改变，并非数据库事务或多线程锁。当前实现依赖出列前已经验证列首，后续若引入异步流程，需要重新审视这种假设。
+先读 [scripts/app/game_controller.gd:204](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/app/game_controller.gd.txt:204)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/app/game_controller.gd#L204) · [仓库内快照](source-baseline/scripts/app/game_controller.gd.txt)）。它检查关卡仍运行、列号有效、列首存在、槽位有空，然后先占槽再出列。这里的“原子”主要表示一次同步操作内成功一起改变、失败不改变，并非数据库事务或多线程锁。当前实现依赖出列前已经验证列首，后续若引入异步流程，需要重新审视这种假设。
 
-成功上位后进入 LOADING，不立即注册射击；第 10 章详述动画阶段。READY 后调度器调用 try_auto_fire。它依次检查槽位、弹药、单炮并发上限、全局球数、炮口解析和目标。找到合法瞄点后进入 [scripts/app/game_controller.gd:430](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/app/game_controller.gd.txt:430)：预订目标，创建球，成功后才扣弹，再发布发射反馈。若方向非法或球创建失败，取消预订，不扣玩家弹药。
+成功上位后进入 LOADING，不立即注册射击；第 10 章详述动画阶段。READY 后调度器调用 try_auto_fire。它依次检查槽位、弹药、单炮并发上限、全局球数、炮口解析和目标。找到合法瞄点后进入 [scripts/app/game_controller.gd:430](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/app/game_controller.gd.txt:430)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/app/game_controller.gd#L430) · [仓库内快照](source-baseline/scripts/app/game_controller.gd.txt)）：预订目标，创建球，成功后才扣弹，再发布发射反馈。若方向非法或球创建失败，取消预订，不扣玩家弹药。
 
 命中也分两层。物理层报告“球与某块接触”，控制器验证票据和颜色后调用 destroy，成功才结算命中。视觉上球碰到东西不是消除许可；逻辑上找到目标也不是命中证明。这个边界防止选靶代码提前删除方块，用好看的弹道动画掩盖实际没有碰撞的事实。
 
-取消路径通过 [scripts/app/game_controller.gd:624](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/app/game_controller.gd.txt:624) 处理。只有 `settle_cancel` 返回 changed 才返还一次弹药。同一球既产生命中结束又触发清理消息时，第二次不能再加弹。这个幂等条件比“我认为这个事件只会来一次”可靠得多，也容易用小测试主动复现。
+取消路径通过 [scripts/app/game_controller.gd:624](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/app/game_controller.gd.txt:624)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/app/game_controller.gd#L624) · [仓库内快照](source-baseline/scripts/app/game_controller.gd.txt)） 处理。只有 `settle_cancel` 返回 changed 才返还一次弹药。同一球既产生命中结束又触发清理消息时，第二次不能再加弹。这个幂等条件比“我认为这个事件只会来一次”可靠得多，也容易用小测试主动复现。
 
-下面是可保存到练习副本 `manual_shot.gd` 的教学实验。它选择一列炮台，把自动调度关闭，再主动调用控制器，直到一笔真实命中完成。它不是生产代码替代品，也不修改方块计数。原点构造参考 [tests/integration/test_loading_retire.gd:32](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/tests/integration/test_loading_retire.gd.txt:32)。
+下面是可保存到练习副本 `manual_shot.gd` 的教学实验。它选择一列炮台，把自动调度关闭，再主动调用控制器，直到一笔真实命中完成。它不是生产代码替代品，也不修改方块计数。原点构造参考 [tests/integration/test_loading_retire.gd:32](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/tests/integration/test_loading_retire.gd.txt:32)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/tests/integration/test_loading_retire.gd#L32) · [仓库内快照](source-baseline/tests/integration/test_loading_retire.gd.txt)）。
 
 ```gdscript
 extends SceneTree
@@ -90,7 +90,7 @@ func _run() -> void:
 
 本实验有界执行，不承诺每个改过的模型和队列都必定找到目标。如果超时，保留错误并分析选靶等待原因，不直接改成 destroy(0) 让断言通过。当前版本的标准发射覆盖优先由仓库 test_auto_fire 和 test_multi_ball 提供，这段教学脚本是读者需要实际执行验证的独立练习。
 
-再看合成 [scripts/gameplay/merge_service.gd:11](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/gameplay/merge_service.gd.txt:11)：两列列首、同色、不同来源、总量不超过上限，条件不满足就拒绝且不改变双方。合成完成后原炮 ID 的去向必须明确，不能让旧视图稍后继续操作已删除炮台。所谓 UI 模式只是帮助玩家选择，真正限制必须在业务接口里再次验证。
+再看合成 [scripts/gameplay/merge_service.gd:11](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/gameplay/merge_service.gd.txt:11)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/gameplay/merge_service.gd#L11) · [仓库内快照](source-baseline/scripts/gameplay/merge_service.gd.txt)）：两列列首、同色、不同来源、总量不超过上限，条件不满足就拒绝且不改变双方。合成完成后原炮 ID 的去向必须明确，不能让旧视图稍后继续操作已删除炮台。所谓 UI 模式只是帮助玩家选择，真正限制必须在业务接口里再次验证。
 
 ### 延伸练习：把失败也写进事务表
 

@@ -8,9 +8,9 @@
 
 ## 概念讲解：先定义测量对象和分母
 
-一帧包含输入、脚本、物理、渲染提交、GPU 工作和等待。只测 GDScript 函数不能代表端到端帧时间；只看 FPS 也不能知道 CPU 和 GPU 谁慢。[scripts/diagnostics/perf_monitor.gd:31](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/diagnostics/perf_monitor.gd.txt:31) 收集帧 delta，每约五秒排序计算平均和 p95，并写 JSONL。它记录的是窗口统计，不能从一个 p95 数字反推出某一个具体函数耗时。
+一帧包含输入、脚本、物理、渲染提交、GPU 工作和等待。只测 GDScript 函数不能代表端到端帧时间；只看 FPS 也不能知道 CPU 和 GPU 谁慢。[scripts/diagnostics/perf_monitor.gd:31](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/diagnostics/perf_monitor.gd.txt:31)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/diagnostics/perf_monitor.gd#L31) · [仓库内快照](source-baseline/scripts/diagnostics/perf_monitor.gd.txt)） 收集帧 delta，每约五秒排序计算平均和 p95，并写 JSONL。它记录的是窗口统计，不能从一个 p95 数字反推出某一个具体函数耗时。
 
-PerfProbe 给选靶、球步进、HUD 刷新、碎片等阶段打点，见 [scripts/diagnostics/perf_probe.gd:6](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/diagnostics/perf_probe.gd.txt:6)。当前交付源码开关为 false，因此没有探针数据不等于所有函数零成本。性能报告必须记录是否启用探针，因为测量本身有开销；“关闭探针”也不等于性能监视器和所有日志都关闭。
+PerfProbe 给选靶、球步进、HUD 刷新、碎片等阶段打点，见 [scripts/diagnostics/perf_probe.gd:6](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/diagnostics/perf_probe.gd.txt:6)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/diagnostics/perf_probe.gd#L6) · [仓库内快照](source-baseline/scripts/diagnostics/perf_probe.gd.txt)）。当前交付源码开关为 false，因此没有探针数据不等于所有函数零成本。性能报告必须记录是否启用探针，因为测量本身有开销；“关闭探针”也不等于性能监视器和所有日志都关闭。
 
 内存指标同样不能混用。Godot 静态内存 API 在历史导出环境返回 0，于是报告用操作系统 RSS 佐证。这个 0 是观测接口缺口，不是游戏零内存。Android PSS、Mac RSS、GPU 显存和引擎内部统计不能直接混在一列比较，应分别注明口径、单位、采样方式。
 
@@ -20,13 +20,13 @@ PerfProbe 给选靶、球步进、HUD 刷新、碎片等阶段打点，见 [scri
 
 现象：高频事件可能每次都刷新全部控件，短时间内重复布局和文本更新。定位时先数调用次数，再测每次耗时。如果单次 0.2ms，一帧执行十次就是 2ms，不能因单次“很快”忽略它。当前修复是事件设置 `_refresh_dirty`，在 `_process` 中集中执行一次，用户直接操作仍可以即时刷新。
 
-实现位置 [scripts/presentation/hud_presenter.gd:47](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/presentation/hud_presenter.gd.txt:47) 和 [scripts/presentation/hud_presenter.gd:588](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/presentation/hud_presenter.gd.txt:588)。不要把它概括成“任何情况下每帧最多一次 refresh”，因为直接调用路径仍存在。准确说法是事件驱动刷新按帧合并。验证应统计实际调用和控件表现，而不是只搜索到一个 dirty 字段就算优化完成。
+实现位置 [scripts/presentation/hud_presenter.gd:47](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/presentation/hud_presenter.gd.txt:47)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/presentation/hud_presenter.gd#L47) · [仓库内快照](source-baseline/scripts/presentation/hud_presenter.gd.txt)） 和 [scripts/presentation/hud_presenter.gd:588](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/presentation/hud_presenter.gd.txt:588)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/presentation/hud_presenter.gd#L588) · [仓库内快照](source-baseline/scripts/presentation/hud_presenter.gd.txt)）。不要把它概括成“任何情况下每帧最多一次 refresh”，因为直接调用路径仍存在。准确说法是事件驱动刷新按帧合并。验证应统计实际调用和控件表现，而不是只搜索到一个 dirty 字段就算优化完成。
 
 历史整体回放可作为合并后的系统证据，但没有找到只开关 HUD 合并的独立 FPS 对照。因此本案例的单项提速幅度写 NOT_MEASURED。建议实验固定种子和相同回放，记录 refresh 次数/帧、总耗时和交互延迟；如果省了调用却让数字慢一秒更新，也不能算成功。
 
 ### 案例二：结束球仍留在容器
 
-现象：活跃球数上限只有 30，运行对象却可能随累计发射增加。定位不能只看 active_count，要检查 `_balls.size()` 和结束历史长度。当前 [scripts/projectile/projectile_system.gd:14](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/projectile/projectile_system.gd.txt:14) 将历史限制为 64，BallPhysics 在结果事件派发后回收 ended 球。顺序保证接收方仍能取得必要快照。
+现象：活跃球数上限只有 30，运行对象却可能随累计发射增加。定位不能只看 active_count，要检查 `_balls.size()` 和结束历史长度。当前 [scripts/projectile/projectile_system.gd:14](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/projectile/projectile_system.gd.txt:14)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/projectile/projectile_system.gd#L14) · [仓库内快照](source-baseline/scripts/projectile/projectile_system.gd.txt)） 将历史限制为 64，BallPhysics 在结果事件派发后回收 ended 球。顺序保证接收方仍能取得必要快照。
 
 修复目标有两个：活跃集合保持有界；结束和命中事件仍带完整 shot_id、颜色和位置。若先回收再派发，内存曲线很好看但结算丢失，这不是有效优化。已有多球测试和生命周期测试用于回归，UX 的 RSS 约 338→339MB 是系统级稳定证据，不能独归因于这一项。
 
@@ -34,7 +34,7 @@ PerfProbe 给选靶、球步进、HUD 刷新、碎片等阶段打点，见 [scri
 
 ### 案例三：预算写了却没有约束所有路径
 
-现象：配置了 3ms 扫描预算，旋转时仍出现长步。定位发现预算判断放在昂贵操作之后，前面的 continue 分支绕过检查。修复移到候选循环顶部，并保存正确桶内游标。对应开发记录 [docs/dev-step-log.md:391](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/docs/dev-step-log.md.txt:391)。
+现象：配置了 3ms 扫描预算，旋转时仍出现长步。定位发现预算判断放在昂贵操作之后，前面的 continue 分支绕过检查。修复移到候选循环顶部，并保存正确桶内游标。对应开发记录 [docs/dev-step-log.md:391](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/docs/dev-step-log.md.txt:391)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/docs/dev-step-log.md#L391) · [仓库内快照](source-baseline/docs/dev-step-log.md.txt)）。
 
 验证包括极小预算下分片结果等价、不会跳过半桶、轮转游标前进。后来增加每步 6ms 共享预算，避免五门炮各花 3ms。注意不是单次预算从 3 改成 6；这两个维度分别限制单次查询和一轮调度。第 8 章指出的热点与建桶范围仍需额外 profiling，所以不要把配置值当成硬实时保证。
 

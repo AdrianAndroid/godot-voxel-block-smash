@@ -12,7 +12,7 @@
 
 旧中心点方案只尝试方块中心。若中心被邻块挡住、边缘有足够宽的可达部分，就会拒绝一个实际上能打到的方块。新方案先试中心，再对朝向炮口的暴露面采样面中心和四个内缩角。每点都使用实际球半径和同一求解器。它增加可找到路径的机会，但有限采样仍不等于穷尽所有连续路径，不能宣称任何可达小缝都一定能找出。
 
-成功结果因此不应只有 voxel_id。[scripts/gameplay/target_selector.gd:335](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/gameplay/target_selector.gd.txt:335) 和 find_target 返回 aim_grid_point、face_id、origin_used、geometry_version 等信息。aim_grid_point 是本次证明过的路径终点；如果发射时又改回中心，刚才的证明就作废。结果结构携带的不只是“选中了谁”，还包含“怎样选中的”。
+成功结果因此不应只有 voxel_id。[scripts/gameplay/target_selector.gd:335](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/gameplay/target_selector.gd.txt:335)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/gameplay/target_selector.gd#L335) · [仓库内快照](source-baseline/scripts/gameplay/target_selector.gd.txt)） 和 find_target 返回 aim_grid_point、face_id、origin_used、geometry_version 等信息。aim_grid_point 是本次证明过的路径终点；如果发射时又改回中心，刚才的证明就作废。结果结构携带的不只是“选中了谁”，还包含“怎样选中的”。
 
 ## 动手步骤：从便宜过滤到昂贵确认
 
@@ -22,11 +22,11 @@
 
 全扫描使用距离分桶和断点。扫描状态保存起始桶 start、已经完成的桶数 k、当前桶内下一索引 ii。只有整桶扫完才推进 k；否则下次恢复会跳过当前桶剩余候选。这个 bug 不一定导致异常，只会让某些块“永远轮不到”，所以必须用小预算把一次查询拆成很多片，与不限预算结果对照。
 
-[scripts/gameplay/target_selector.gd:43](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/gameplay/target_selector.gd.txt:43) 定义单次 3000 微秒；旁边 step_budget_us 为每步共享 6000 微秒。二者有不同作用：一次查询不能独占太久，多个炮台合起来也不能无限叠加。预算检查放在候选循环顶部，覆盖提前 continue 的路径。返回 scan_pending 表示需要下一步继续，不是完整搜索失败，调度器应立即续扫而非等待正常射击冷却。
+[scripts/gameplay/target_selector.gd:43](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/gameplay/target_selector.gd.txt:43)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/gameplay/target_selector.gd#L43) · [仓库内快照](source-baseline/scripts/gameplay/target_selector.gd.txt)） 定义单次 3000 微秒；旁边 step_budget_us 为每步共享 6000 微秒。二者有不同作用：一次查询不能独占太久，多个炮台合起来也不能无限叠加。预算检查放在候选循环顶部，覆盖提前 continue 的路径。返回 scan_pending 表示需要下一步继续，不是完整搜索失败，调度器应立即续扫而非等待正常射击冷却。
 
 这里要对“预算”保持精确。当前计时片段从部分几何准备之后开始，热点确认和单个候选内多点扫掠并非随时可中断；共享余量按片段结算。因此 3ms、6ms 是扫描调度目标，不是整个 find_target 或整帧耗时的硬上界。阅读参数名不能代替检查计时器放在哪里。若 profiler 显示首扫仍超时，先看未计入区域和单候选最坏成本。
 
-多点算法见 [scripts/gameplay/target_selector.gd:354](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/gameplay/target_selector.gd.txt:354)。候选面的法向朝向原点才尝试；面内坐标取 0.2、0.5、0.8，但跳过边中点，保留五点。法向向块内偏移 0.06，避免终点恰好落在边界时格归属含糊。先做 DDA 遮挡预过滤，再做实际半径 sweep，最终首命中 ID 一致才接受。过滤层与精确层要使用兼容的格约定。
+多点算法见 [scripts/gameplay/target_selector.gd:354](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/gameplay/target_selector.gd.txt:354)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/gameplay/target_selector.gd#L354) · [仓库内快照](source-baseline/scripts/gameplay/target_selector.gd.txt)）。候选面的法向朝向原点才尝试；面内坐标取 0.2、0.5、0.8，但跳过边中点，保留五点。法向向块内偏移 0.06，避免终点恰好落在边界时格归属含糊。先做 DDA 遮挡预过滤，再做实际半径 sweep，最终首命中 ID 一致才接受。过滤层与精确层要使用兼容的格约定。
 
 可以画出如下决策流程，每条失败出口都不扣弹：
 
@@ -59,7 +59,7 @@ flowchart TD
 
 粗原点 key 把多个真实位置合并，缓存可能短暂推迟发现新路径。即使代码认为姿态未变，外部若仅改变相机或炮口而未更新几何版本，也要重新审视长期负缓存的前提。当前正式路径有特定布局和旋转更新方式；将 selector 复制到另一款游戏时，必须把所有影响可达性的输入纳入失效策略。
 
-时钟域 bug 是最值得复盘的真实案例。旧条目用启动后的墙钟秒写入，例如 0.537；调用方随后注入从关卡开始累计的模拟秒，例如 0.016。两者相减得到负 age。若只判断 `age <= TTL`，负数总是满足上限，缓存会异常持续服务。修复统一使用模拟时钟，并对负 age 做保护，见 [scripts/gameplay/target_selector.gd:77](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/gameplay/target_selector.gd.txt:77) 与 [docs/dev-step-log.md:512](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/docs/dev-step-log.md.txt:512)。
+时钟域 bug 是最值得复盘的真实案例。旧条目用启动后的墙钟秒写入，例如 0.537；调用方随后注入从关卡开始累计的模拟秒，例如 0.016。两者相减得到负 age。若只判断 `age <= TTL`，负数总是满足上限，缓存会异常持续服务。修复统一使用模拟时钟，并对负 age 做保护，见 [scripts/gameplay/target_selector.gd:77](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/gameplay/target_selector.gd.txt:77)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/gameplay/target_selector.gd#L77) · [仓库内快照](source-baseline/scripts/gameplay/target_selector.gd.txt)） 与 [docs/dev-step-log.md:512](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/docs/dev-step-log.md.txt:512)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/docs/dev-step-log.md#L512) · [仓库内快照](source-baseline/docs/dev-step-log.md.txt)）。
 
 这不是“计时函数精度太低”，而是两个时间原点不同。暂停时模拟时间不前进，性能计时仍需要单调现实时间；两种时钟都合理，不能混减。headless 快进几百个物理步可能只过几毫秒墙钟，测试最容易放大这种差异。学习到这里，你应给变量名加上 sim、wall 或 usec，而不是统一叫 time。
 

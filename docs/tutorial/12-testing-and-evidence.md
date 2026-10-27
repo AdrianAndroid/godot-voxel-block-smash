@@ -30,7 +30,7 @@ print('suite_files=',len(tests))
 PY
 ```
 
-再看保存隔离 [scripts/level/level_repository.gd:10](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/level/level_repository.gd.txt:10)。涉及磁盘的集成测试在开始时注入 `user://test_saves/<name>_<pid>`。目录隔离不仅保护玩家进度，还防止两个套件互相覆盖，产生依赖执行顺序的假失败。我们的练习副本另有独立应用名，形成额外保护，但不能因此在测试代码里省略隔离约定。
+再看保存隔离 [scripts/level/level_repository.gd:10](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/level/level_repository.gd.txt:10)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/level/level_repository.gd#L10) · [仓库内快照](source-baseline/scripts/level/level_repository.gd.txt)）。涉及磁盘的集成测试在开始时注入 `user://test_saves/<name>_<pid>`。目录隔离不仅保护玩家进度，还防止两个套件互相覆盖，产生依赖执行顺序的假失败。我们的练习副本另有独立应用名，形成额外保护，但不能因此在测试代码里省略隔离约定。
 
 下面是串行运行器，命令即写在教程中，不假装仓库已有该脚本。每套设 120 秒上限，日志输出到新的 /tmp 目录，不覆盖历史证据。任何超时或脚本错误都计失败，同时继续收集其他套件结果。它适用于本基线的小型测试；若未来新增长测，应显式调整对应预算，而非取消所有超时。
 
@@ -63,13 +63,13 @@ PY
 
 判断退出码与 TEST_PASS 双重条件可以发现一部分“测试没真正跑起来”的情况，但并非完美。若断言根本没覆盖风险，再严格的运行器也只证明错误测试顺利结束。设计用例时先写具体反例，例如同一目标被两炮预订、负 age、零弹取回、上位中保存，而不是只验证函数返回类型。
 
-存档验证必须经过真实 JSON 文件：保存→读取→校验→启动恢复，而不是只把内存快照交给 restore。[tests/integration/test_loading_retire.gd:84](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/tests/integration/test_loading_retire.gd.txt:84) 就读回落盘结果再启动新控制器。这样才有机会发现键类型变化和状态归一错误。坏 JSON 与文件不存在也要走不同分支，不能都默认为新游戏。
+存档验证必须经过真实 JSON 文件：保存→读取→校验→启动恢复，而不是只把内存快照交给 restore。[tests/integration/test_loading_retire.gd:84](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/tests/integration/test_loading_retire.gd.txt:84)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/tests/integration/test_loading_retire.gd#L84) · [仓库内快照](source-baseline/tests/integration/test_loading_retire.gd.txt)） 就读回落盘结果再启动新控制器。这样才有机会发现键类型变化和状态归一错误。坏 JSON 与文件不存在也要走不同分支，不能都默认为新游戏。
 
 ### 守恒是局部规则组成的检查网
 
 对每种颜色定义 Q 为队列弹药，S 为槽内剩余弹药，F 为在途票据，V 为活块，D 为已删块。正常过程应满足 `Q+S+F=V` 与 `V+D=V0`。这不是需要保密的反作弊技巧，而是普通资源守恒。它能发现丢弹、重复退款和假减计数，不能单独证明几何命中正确，所以必须结合碰撞夹具和回放。
 
-每次状态转移只改变相应项：上位在 Q 与 S 间搬运；发射从 S 搬到 F；命中 F 与 V 同减；取消从 F 还回 S；合成和洗牌只重排。把这些关系写成概念表就足够理解审计，不需要把完整内部实现复制成教程的一半篇幅。入口见 [scripts/app/game_controller.gd:831](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/app/game_controller.gd.txt:831)。
+每次状态转移只改变相应项：上位在 Q 与 S 间搬运；发射从 S 搬到 F；命中 F 与 V 同减；取消从 F 还回 S；合成和洗牌只重排。把这些关系写成概念表就足够理解审计，不需要把完整内部实现复制成教程的一半篇幅。入口见 [scripts/app/game_controller.gd:831](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/app/game_controller.gd.txt:831)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/app/game_controller.gd#L831) · [仓库内快照](source-baseline/scripts/app/game_controller.gd.txt)）。
 
 ### 十三连 WON 的实际证据
 
@@ -95,7 +95,7 @@ print('min/max/mean',min(times),max(times),round(statistics.mean(times),2))
 PY
 ```
 
-注意历史摘要称 mean 174.6，应以重新计算的原始 JSON 为准，教程不把四舍五入或摘要笔误当权威。回放 solution 中 slots=3 是原解元信息，当前运行规则五槽全开；不能据此声称测试的就是三槽难度。报告中的 `pacing_target_210_240` 实际代码检查 0～240，而不是 210～240，见 [scripts/app/replay_runner.gd:124](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/app/replay_runner.gd.txt:124)，应直接读取时间数值判断。
+注意历史摘要称 mean 174.6，应以重新计算的原始 JSON 为准，教程不把四舍五入或摘要笔误当权威。回放 solution 中 slots=3 是原解元信息，当前运行规则五槽全开；不能据此声称测试的就是三槽难度。报告中的 `pacing_target_210_240` 实际代码检查 0～240，而不是 210～240，见 [scripts/app/replay_runner.gd:124](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/app/replay_runner.gd.txt:124)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/app/replay_runner.gd#L124) · [仓库内快照](source-baseline/scripts/app/replay_runner.gd.txt)），应直接读取时间数值判断。
 
 ### 延伸练习：检查测试是否真的能失败
 

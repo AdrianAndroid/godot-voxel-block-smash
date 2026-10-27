@@ -12,11 +12,11 @@
 
 项目里的逻辑视口为 1080×2400，桌面窗口覆盖尺寸为 540×1200。前者决定界面布局计算的参考空间，后者决定桌面实际窗口的请求大小。操作系统还可能加标题栏，截图尺寸因此未必恰好是 540×1200。把截图的标题栏算成游戏高度，会使炮口与模型的屏幕坐标计算产生系统偏差。
 
-`canvas_items` 与 `keep` 是拉伸模式和宽高比策略，不是“自动适配所有手机”的保证。它们约束画布随窗口变化的方式，按钮锚点、容器布局、系统安全区域仍需要单独处理。桌面关闭 `resizable` 能固定验收条件，却不能替代未来 Android 和 iOS 的屏幕适配。当前配置见 [project.godot:18](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/project.godot.txt:18)。
+`canvas_items` 与 `keep` 是拉伸模式和宽高比策略，不是“自动适配所有手机”的保证。它们约束画布随窗口变化的方式，按钮锚点、容器布局、系统安全区域仍需要单独处理。桌面关闭 `resizable` 能固定验收条件，却不能替代未来 Android 和 iOS 的屏幕适配。当前配置见 [project.godot:18](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/project.godot.txt:18)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/project.godot#L18) · [仓库内快照](source-baseline/project.godot.txt)）。
 
 格空间尺寸又是另一回事。一个体素格可以对应某个模型单位，模型通过变换进入世界空间，再由相机投影到屏幕。540 像素宽与 54 格宽不存在天然的十倍关系。以后计算拖动灵敏度时会用屏幕尺寸，计算碰撞时则用格单位；把两者混起来会导致窗口缩放以后手感和命中同时改变。
 
-项目选择 GL Compatibility，对应 [project.godot:29](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/project.godot.txt:29)。历史目标机是 Intel UHD 630 集成显卡，功能需求主要是大量相同立方体、基本光照和二维界面，因此选择兼容后端有合理依据。不过“兼容性适合本机”不等于“所有项目它都最快”，也不能仅靠切换后端修复选靶 CPU 循环。这个决策应与设备、画质需求和实测一起保存。
+项目选择 GL Compatibility，对应 [project.godot:29](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/project.godot.txt:29)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/project.godot#L29) · [仓库内快照](source-baseline/project.godot.txt)）。历史目标机是 Intel UHD 630 集成显卡，功能需求主要是大量相同立方体、基本光照和二维界面，因此选择兼容后端有合理依据。不过“兼容性适合本机”不等于“所有项目它都最快”，也不能仅靠切换后端修复选靶 CPU 循环。这个决策应与设备、画质需求和实测一起保存。
 
 ## 动手步骤：建立空场景并阅读正式规则
 
@@ -52,7 +52,7 @@ renderer/rendering_method.mobile="gl_compatibility"
 "$GODOT_BIN" --path "$TUTORIAL_LAB/sandbox"
 ```
 
-接下来阅读正式关卡 [assets/levels/level_01.json:9](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/assets/levels/level_01.json.txt:9)，先抄一张“当前有效规则表”，不要抄历史文档标题里的默认值。当前五槽全开，五列队列。每列画面显示前三门，后面还有更多；“三”描述窗口深度，而非可用槽位数。普通炮按颜色携带弹药，玩家点击列首后上位，到位自动射击。只允许实际命中同色有效目标时消除一块。
+接下来阅读正式关卡 [assets/levels/level_01.json:9](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/assets/levels/level_01.json.txt:9)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/assets/levels/level_01.json#L9) · [仓库内快照](source-baseline/assets/levels/level_01.json.txt)），先抄一张“当前有效规则表”，不要抄历史文档标题里的默认值。当前五槽全开，五列队列。每列画面显示前三门，后面还有更多；“三”描述窗口深度，而非可用槽位数。普通炮按颜色携带弹药，玩家点击列首后上位，到位自动射击。只允许实际命中同色有效目标时消除一块。
 
 模型初始块数应从 JSON 读取。开局为各颜色生成对应总弹药，再拆成多门炮分入队列。这样“还剩多少块”和“还剩多少可消除能力”能够建立数量关系。合成只是把两份同色弹药合并，不凭空增加弹药；洗牌只改变队列排列，不改变总量。取回目前保留测试用途，正式回放通关证据不能依赖它。
 
@@ -74,7 +74,7 @@ renderer/rendering_method.mobile="gl_compatibility"
 
 ## 踩坑记录：配置历史为何容易误导
 
-项目曾因为桌面窗口请求尺寸过大，被系统可用屏幕高度限制，而比例策略又导致横向扩展，最终看起来接近方形。修复记录位于 [docs/dev-step-log.md:461](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/docs/dev-step-log.md.txt:461)。这个案例的诊断顺序是先读实际窗口尺寸，再看视口和拉伸策略，而不是先修改按钮绝对位置。只修按钮会在另一个显示器上再次出错。
+项目曾因为桌面窗口请求尺寸过大，被系统可用屏幕高度限制，而比例策略又导致横向扩展，最终看起来接近方形。修复记录位于 [docs/dev-step-log.md:461](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/docs/dev-step-log.md.txt:461)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/docs/dev-step-log.md#L461) · [仓库内快照](source-baseline/docs/dev-step-log.md.txt)）。这个案例的诊断顺序是先读实际窗口尺寸，再看视口和拉伸策略，而不是先修改按钮绝对位置。只修按钮会在另一个显示器上再次出错。
 
 另一个真实陷阱是默认值与覆盖值。`game_rules.gd` 中默认速度 100，但当前关卡文件覆盖成 120；调度器字段初始化仍可能写 0.25，但 setup 收到的是规则解析后的值。搜索一个数字只能找到声明，不能自动找到运行值。最可靠的方法是沿“JSON→解析→rules→setup”走一遍，再在日志中记录实际生效参数。
 

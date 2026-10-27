@@ -5,7 +5,8 @@
     "line": 30,
     "needle": "func _ready()",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/app/main.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/app/main.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/app/main.gd#L30"
   },
   {
     "chapter": "01-godot-basics.md",
@@ -13,7 +14,8 @@
     "line": 12,
     "needle": "[node name=\"Main\"",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scenes/main/main.tscn.txt"
+    "snapshot": "docs/tutorial/source-baseline/scenes/main/main.tscn.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scenes/main/main.tscn#L12"
   },
   {
     "chapter": "02-project-and-rules.md",
@@ -21,7 +23,8 @@
     "line": 18,
     "needle": "window/size/viewport_width",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/project.godot.txt"
+    "snapshot": "docs/tutorial/source-baseline/project.godot.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/project.godot#L18"
   },
   {
     "chapter": "02-project-and-rules.md",
@@ -29,7 +32,8 @@
     "line": 29,
     "needle": "renderer/rendering_method=",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/project.godot.txt"
+    "snapshot": "docs/tutorial/source-baseline/project.godot.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/project.godot#L29"
   },
   {
     "chapter": "02-project-and-rules.md",
@@ -37,7 +41,8 @@
     "line": 9,
     "needle": "\"initial_slots\"",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/assets/levels/level_01.json.txt"
+    "snapshot": "docs/tutorial/source-baseline/assets/levels/level_01.json.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/assets/levels/level_01.json#L9"
   },
   {
     "chapter": "02-project-and-rules.md",
@@ -45,7 +50,8 @@
     "line": 461,
     "needle": "## 用户调整：去掉槽位锁",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/docs/dev-step-log.md.txt"
+    "snapshot": "docs/tutorial/source-baseline/docs/dev-step-log.md.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/docs/dev-step-log.md#L461"
   },
   {
     "chapter": "03-data-model.md",
@@ -53,7 +59,8 @@
     "line": 11,
     "needle": "static func load_from_json",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/data/voxel_loader.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/data/voxel_loader.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/data/voxel_loader.gd#L11"
   },
   {
     "chapter": "03-data-model.md",
@@ -61,7 +68,8 @@
     "line": 8,
     "needle": "var positions",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/data/voxel_data.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/data/voxel_data.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/data/voxel_data.gd#L8"
   },
   {
     "chapter": "03-data-model.md",
@@ -69,7 +77,8 @@
     "line": 29,
     "needle": "static func from_rules",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/data/game_rules.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/data/game_rules.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/data/game_rules.gd#L29"
   },
   {
     "chapter": "04-voxel-rendering.md",
@@ -77,7 +86,8 @@
     "line": 16,
     "needle": "func build",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/voxel/voxel_renderer.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/voxel/voxel_renderer.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/voxel/voxel_renderer.gd#L16"
   },
   {
     "chapter": "04-voxel-rendering.md",
@@ -85,7 +95,8 @@
     "line": 49,
     "needle": "func remove_voxel",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/voxel/voxel_renderer.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/voxel/voxel_renderer.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/voxel/voxel_renderer.gd#L49"
   },
   {
     "chapter": "04-voxel-rendering.md",
@@ -93,7 +104,8 @@
     "line": 41,
     "needle": "func destroy",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/voxel/voxel_manager.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/voxel/voxel_manager.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/voxel/voxel_manager.gd#L41"
   },
   {
     "chapter": "04-voxel-rendering.md",
@@ -101,7 +113,8 @@
     "line": 9,
     "needle": "func _initialize",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/tests/unit/test_voxel.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/tests/unit/test_voxel.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/tests/unit/test_voxel.gd#L9"
   },
   {
     "chapter": "05-main-scene.md",
@@ -109,7 +122,8 @@
     "line": 1,
     "needle": "[gd_scene",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scenes/main/main.tscn.txt"
+    "snapshot": "docs/tutorial/source-baseline/scenes/main/main.tscn.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scenes/main/main.tscn#L1"
   },
   {
     "chapter": "05-main-scene.md",
@@ -117,7 +131,8 @@
     "line": 30,
     "needle": "func _ready()",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/app/main.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/app/main.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/app/main.gd#L30"
   },
   {
     "chapter": "05-main-scene.md",
@@ -125,7 +140,8 @@
     "line": 70,
     "needle": "func enter_level",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/app/main.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/app/main.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/app/main.gd#L70"
   },
   {
     "chapter": "05-main-scene.md",
@@ -133,7 +149,8 @@
     "line": 5,
     "needle": "[node name=\"VoxelModel\"",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scenes/voxel/voxel_model.tscn.txt"
+    "snapshot": "docs/tutorial/source-baseline/scenes/voxel/voxel_model.tscn.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scenes/voxel/voxel_model.tscn#L5"
   },
   {
     "chapter": "05-main-scene.md",
@@ -141,7 +158,8 @@
     "line": 257,
     "needle": "func _frame_model",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/app/main.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/app/main.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/app/main.gd#L257"
   },
   {
     "chapter": "05-main-scene.md",
@@ -149,7 +167,8 @@
     "line": 124,
     "needle": "func _cleanup_session",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/app/main.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/app/main.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/app/main.gd#L124"
   },
   {
     "chapter": "05-main-scene.md",
@@ -157,7 +176,8 @@
     "line": 1,
     "needle": "extends SceneTree",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/tools/lifecycle_check.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/tools/lifecycle_check.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/tools/lifecycle_check.gd#L1"
   },
   {
     "chapter": "06-gameplay-transactions.md",
@@ -165,7 +185,8 @@
     "line": 27,
     "needle": "static func split_color_ammo",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/gameplay/cannon_queue_service.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/gameplay/cannon_queue_service.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/gameplay/cannon_queue_service.gd#L27"
   },
   {
     "chapter": "06-gameplay-transactions.md",
@@ -173,7 +194,8 @@
     "line": 26,
     "needle": "static func leftmost_free",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/gameplay/slot_service.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/gameplay/slot_service.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/gameplay/slot_service.gd#L26"
   },
   {
     "chapter": "06-gameplay-transactions.md",
@@ -181,7 +203,8 @@
     "line": 17,
     "needle": "func create_ticket",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/gameplay/shot_ledger.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/gameplay/shot_ledger.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/gameplay/shot_ledger.gd#L17"
   },
   {
     "chapter": "06-gameplay-transactions.md",
@@ -189,7 +212,8 @@
     "line": 204,
     "needle": "func place_front",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/app/game_controller.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/app/game_controller.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/app/game_controller.gd#L204"
   },
   {
     "chapter": "06-gameplay-transactions.md",
@@ -197,7 +221,8 @@
     "line": 430,
     "needle": "func _fire_at",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/app/game_controller.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/app/game_controller.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/app/game_controller.gd#L430"
   },
   {
     "chapter": "06-gameplay-transactions.md",
@@ -205,7 +230,8 @@
     "line": 624,
     "needle": "func _refund_ticket",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/app/game_controller.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/app/game_controller.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/app/game_controller.gd#L624"
   },
   {
     "chapter": "06-gameplay-transactions.md",
@@ -213,7 +239,8 @@
     "line": 32,
     "needle": "func _aim_for",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/tests/integration/test_loading_retire.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/tests/integration/test_loading_retire.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/tests/integration/test_loading_retire.gd#L32"
   },
   {
     "chapter": "06-gameplay-transactions.md",
@@ -221,7 +248,8 @@
     "line": 11,
     "needle": "static func merge_columns",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/gameplay/merge_service.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/gameplay/merge_service.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/gameplay/merge_service.gd#L11"
   },
   {
     "chapter": "07-local-ballistics.md",
@@ -229,7 +257,8 @@
     "line": 35,
     "needle": "func world_from_grid",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/voxel/voxel_model_node.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/voxel/voxel_model_node.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/voxel/voxel_model_node.gd#L35"
   },
   {
     "chapter": "07-local-ballistics.md",
@@ -237,7 +266,8 @@
     "line": 30,
     "needle": "static func screen_point_origin_world",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/gameplay/fire_geometry.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/gameplay/fire_geometry.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/gameplay/fire_geometry.gd#L30"
   },
   {
     "chapter": "07-local-ballistics.md",
@@ -245,7 +275,8 @@
     "line": 40,
     "needle": "func spawn_local",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/projectile/projectile_system.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/projectile/projectile_system.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/projectile/projectile_system.gd#L40"
   },
   {
     "chapter": "07-local-ballistics.md",
@@ -253,7 +284,8 @@
     "line": 58,
     "needle": "func candidates_along_segment",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/voxel/voxel_spatial_index.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/voxel/voxel_spatial_index.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/voxel/voxel_spatial_index.gd#L58"
   },
   {
     "chapter": "07-local-ballistics.md",
@@ -261,7 +293,8 @@
     "line": 8,
     "needle": "static func sweep",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/projectile/collision_solver.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/projectile/collision_solver.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/projectile/collision_solver.gd#L8"
   },
   {
     "chapter": "07-local-ballistics.md",
@@ -269,7 +302,8 @@
     "line": 34,
     "needle": "func physics_step",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/projectile/ball_physics.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/projectile/ball_physics.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/projectile/ball_physics.gd#L34"
   },
   {
     "chapter": "07-local-ballistics.md",
@@ -277,7 +311,8 @@
     "line": 377,
     "needle": "亚单位步长候选含终点邻格体素",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/docs/dev-step-log.md.txt"
+    "snapshot": "docs/tutorial/source-baseline/docs/dev-step-log.md.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/docs/dev-step-log.md#L377"
   },
   {
     "chapter": "08-target-selection.md",
@@ -285,7 +320,8 @@
     "line": 335,
     "needle": "func confirm_reachable_mp",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/gameplay/target_selector.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/gameplay/target_selector.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/gameplay/target_selector.gd#L335"
   },
   {
     "chapter": "08-target-selection.md",
@@ -293,7 +329,8 @@
     "line": 43,
     "needle": "var scan_budget_us",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/gameplay/target_selector.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/gameplay/target_selector.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/gameplay/target_selector.gd#L43"
   },
   {
     "chapter": "08-target-selection.md",
@@ -301,7 +338,8 @@
     "line": 354,
     "needle": "func _confirm_face_points",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/gameplay/target_selector.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/gameplay/target_selector.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/gameplay/target_selector.gd#L354"
   },
   {
     "chapter": "08-target-selection.md",
@@ -309,7 +347,8 @@
     "line": 77,
     "needle": "func set_clock",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/gameplay/target_selector.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/gameplay/target_selector.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/gameplay/target_selector.gd#L77"
   },
   {
     "chapter": "08-target-selection.md",
@@ -317,7 +356,8 @@
     "line": 512,
     "needle": "墙钟写入 0.537s",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/docs/dev-step-log.md.txt"
+    "snapshot": "docs/tutorial/source-baseline/docs/dev-step-log.md.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/docs/dev-step-log.md#L512"
   },
   {
     "chapter": "09-input-and-rotation.md",
@@ -325,7 +365,8 @@
     "line": 18,
     "needle": "func handle_press",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/input/gesture_router.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/input/gesture_router.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/input/gesture_router.gd#L18"
   },
   {
     "chapter": "09-input-and-rotation.md",
@@ -333,7 +374,8 @@
     "line": 32,
     "needle": "func handle_drag",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/input/gesture_router.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/input/gesture_router.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/input/gesture_router.gd#L32"
   },
   {
     "chapter": "09-input-and-rotation.md",
@@ -341,7 +383,8 @@
     "line": 248,
     "needle": "func _apply_rotation",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/app/main.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/app/main.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/app/main.gd#L248"
   },
   {
     "chapter": "09-input-and-rotation.md",
@@ -349,7 +392,8 @@
     "line": 726,
     "needle": "func queue_view_input",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/app/game_controller.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/app/game_controller.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/app/game_controller.gd#L726"
   },
   {
     "chapter": "09-input-and-rotation.md",
@@ -357,7 +401,8 @@
     "line": 765,
     "needle": "func _apply_view_orientation",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/app/game_controller.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/app/game_controller.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/app/game_controller.gd#L765"
   },
   {
     "chapter": "09-input-and-rotation.md",
@@ -365,7 +410,8 @@
     "line": 278,
     "needle": "func _notification",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/app/main.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/app/main.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/app/main.gd#L278"
   },
   {
     "chapter": "10-loading-and-retiring.md",
@@ -373,7 +419,8 @@
     "line": 17,
     "needle": "const STATE_LOADING",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/gameplay/cannon_queue_service.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/gameplay/cannon_queue_service.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/gameplay/cannon_queue_service.gd#L17"
   },
   {
     "chapter": "10-loading-and-retiring.md",
@@ -381,7 +428,8 @@
     "line": 232,
     "needle": "const LOADING_SEC",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/app/game_controller.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/app/game_controller.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/app/game_controller.gd#L232"
   },
   {
     "chapter": "10-loading-and-retiring.md",
@@ -389,7 +437,8 @@
     "line": 699,
     "needle": "func _on_column_pressed",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/presentation/hud_presenter.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/presentation/hud_presenter.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/presentation/hud_presenter.gd#L699"
   },
   {
     "chapter": "10-loading-and-retiring.md",
@@ -397,7 +446,8 @@
     "line": 726,
     "needle": "func _begin_place_transition",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/presentation/hud_presenter.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/presentation/hud_presenter.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/presentation/hud_presenter.gd#L726"
   },
   {
     "chapter": "10-loading-and-retiring.md",
@@ -405,7 +455,8 @@
     "line": 299,
     "needle": "func _begin_retire",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/app/game_controller.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/app/game_controller.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/app/game_controller.gd#L299"
   },
   {
     "chapter": "11-performance-engineering.md",
@@ -413,7 +464,8 @@
     "line": 31,
     "needle": "func _flush",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/diagnostics/perf_monitor.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/diagnostics/perf_monitor.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/diagnostics/perf_monitor.gd#L31"
   },
   {
     "chapter": "11-performance-engineering.md",
@@ -421,7 +473,8 @@
     "line": 6,
     "needle": "const ENABLED",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/diagnostics/perf_probe.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/diagnostics/perf_probe.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/diagnostics/perf_probe.gd#L6"
   },
   {
     "chapter": "11-performance-engineering.md",
@@ -429,7 +482,8 @@
     "line": 47,
     "needle": "var _refresh_dirty",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/presentation/hud_presenter.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/presentation/hud_presenter.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/presentation/hud_presenter.gd#L47"
   },
   {
     "chapter": "11-performance-engineering.md",
@@ -437,7 +491,8 @@
     "line": 588,
     "needle": "func _process",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/presentation/hud_presenter.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/presentation/hud_presenter.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/presentation/hud_presenter.gd#L588"
   },
   {
     "chapter": "11-performance-engineering.md",
@@ -445,7 +500,8 @@
     "line": 14,
     "needle": "const ENDED_LOG_MAX",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/projectile/projectile_system.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/projectile/projectile_system.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/projectile/projectile_system.gd#L14"
   },
   {
     "chapter": "11-performance-engineering.md",
@@ -453,7 +509,8 @@
     "line": 391,
     "needle": "预算检查移到内层循环每次迭代顶部",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/docs/dev-step-log.md.txt"
+    "snapshot": "docs/tutorial/source-baseline/docs/dev-step-log.md.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/docs/dev-step-log.md#L391"
   },
   {
     "chapter": "12-testing-and-evidence.md",
@@ -461,7 +518,8 @@
     "line": 10,
     "needle": "static func set_save_dir",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/level/level_repository.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/level/level_repository.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/level/level_repository.gd#L10"
   },
   {
     "chapter": "12-testing-and-evidence.md",
@@ -469,7 +527,8 @@
     "line": 84,
     "needle": "var snap: Dictionary",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/tests/integration/test_loading_retire.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/tests/integration/test_loading_retire.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/tests/integration/test_loading_retire.gd#L84"
   },
   {
     "chapter": "12-testing-and-evidence.md",
@@ -477,7 +536,8 @@
     "line": 831,
     "needle": "func conservation_audit",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/app/game_controller.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/app/game_controller.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/app/game_controller.gd#L831"
   },
   {
     "chapter": "12-testing-and-evidence.md",
@@ -485,7 +545,8 @@
     "line": 124,
     "needle": "\"pacing_target_210_240\"",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/app/replay_runner.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/app/replay_runner.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/app/replay_runner.gd#L124"
   },
   {
     "chapter": "13-build-and-delivery.md",
@@ -493,7 +554,8 @@
     "line": 5,
     "needle": "可执行 SHA256",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/reports/desktop/ux/build-info.md.txt"
+    "snapshot": "docs/tutorial/source-baseline/reports/desktop/ux/build-info.md.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/reports/desktop/ux/build-info.md#L5"
   },
   {
     "chapter": "13-build-and-delivery.md",
@@ -501,6 +563,7 @@
     "line": 27,
     "needle": "func arm",
     "commit": "003648e3ac102692c9722b441ba2f801c2f6ac1d",
-    "snapshot": "docs/tutorial/source-baseline/scripts/app/replay_runner.gd.txt"
+    "snapshot": "docs/tutorial/source-baseline/scripts/app/replay_runner.gd.txt",
+    "github_url": "https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/app/replay_runner.gd#L27"
   }
 ]

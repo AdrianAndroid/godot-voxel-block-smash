@@ -16,15 +16,15 @@
 
 ## 动手步骤：把输入链路拆成四段
 
-第一段是输入归属。[scripts/input/gesture_router.gd:18](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/input/gesture_router.gd.txt:18) 在按下时决定该指针属于 UI、模型还是忽略的第二根手指。归属应持续到释放，不能根据当前手指移到哪里每帧改变。否则从队列开始滚动、途中划过模型时，模型会突然转动，玩家感到“控件抢手势”。InputMutex 记录这种所有权，它不是操作系统线程锁。
+第一段是输入归属。[scripts/input/gesture_router.gd:18](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/input/gesture_router.gd.txt:18)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/input/gesture_router.gd#L18) · [仓库内快照](source-baseline/scripts/input/gesture_router.gd.txt)） 在按下时决定该指针属于 UI、模型还是忽略的第二根手指。归属应持续到释放，不能根据当前手指移到哪里每帧改变。否则从队列开始滚动、途中划过模型时，模型会突然转动，玩家感到“控件抢手势”。InputMutex 记录这种所有权，它不是操作系统线程锁。
 
-第二段是原始位移。[scripts/input/gesture_router.gd:32](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/input/gesture_router.gd.txt:32) 对非模型指针返回零，对活跃模型指针返回原始 delta。不要在这里再应用角度钳制，因为它没有权威姿态。鼠标与触摸都可映射到相同意图接口，但需要防止触摸模拟鼠标带来双次输入；桌面测得正常不等于手机也正常。
+第二段是原始位移。[scripts/input/gesture_router.gd:32](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/input/gesture_router.gd.txt:32)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/input/gesture_router.gd#L32) · [仓库内快照](source-baseline/scripts/input/gesture_router.gd.txt)） 对非模型指针返回零，对活跃模型指针返回原始 delta。不要在这里再应用角度钳制，因为它没有权威姿态。鼠标与触摸都可映射到相同意图接口，但需要防止触摸模拟鼠标带来双次输入；桌面测得正常不等于手机也正常。
 
-第三段是屏幕尺度换算。[scripts/app/main.gd:248](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/app/main.gd.txt:248) 使用横向、纵向不同灵敏度；_frame_model 根据视口初始化，使横扫约对应 180 度，模型区域纵扫约对应 120 度。分轴换算能避免狭长窗口里上下移动与左右移动感觉完全不同。当前初始化路径不等于完整动态窗口适配，未来可变窗口或安全区域变化要同步更新。
+第三段是屏幕尺度换算。[scripts/app/main.gd:248](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/app/main.gd.txt:248)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/app/main.gd#L248) · [仓库内快照](source-baseline/scripts/app/main.gd.txt)） 使用横向、纵向不同灵敏度；_frame_model 根据视口初始化，使横扫约对应 180 度，模型区域纵扫约对应 120 度。分轴换算能避免狭长窗口里上下移动与左右移动感觉完全不同。当前初始化路径不等于完整动态窗口适配，未来可变窗口或安全区域变化要同步更新。
 
-第四段是物理步统一应用。[scripts/app/game_controller.gd:726](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/app/game_controller.gd.txt:726) 累积意图，step 先处理旋转，再选靶和推进球，确保同一步都使用同一姿态。若 `_process` 改显示，`_physics_process` 还使用旧几何，玩家看到的位置和选靶位置就不同。transform_version 每步至多递增一次，有助于缓存正确判断几何变化，也减少重复失效。
+第四段是物理步统一应用。[scripts/app/game_controller.gd:726](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/app/game_controller.gd.txt:726)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/app/game_controller.gd#L726) · [仓库内快照](source-baseline/scripts/app/game_controller.gd.txt)） 累积意图，step 先处理旋转，再选靶和推进球，确保同一步都使用同一姿态。若 `_process` 改显示，`_physics_process` 还使用旧几何，玩家看到的位置和选靶位置就不同。transform_version 每步至多递增一次，有助于缓存正确判断几何变化，也减少重复失效。
 
-下面教学公式展示重建姿态与累计角度，完整实现见 [scripts/app/game_controller.gd:765](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/app/game_controller.gd.txt:765)：
+下面教学公式展示重建姿态与累计角度，完整实现见 [scripts/app/game_controller.gd:765](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/app/game_controller.gd.txt:765)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/app/game_controller.gd#L765) · [仓库内快照](source-baseline/scripts/app/game_controller.gd.txt)）：
 
 ```gdscript
 # 教学简化版：真实项目还包含输入积累、暂停和自动旋转。
@@ -53,7 +53,7 @@ voxel_model.set_orientation(orientation)
 
 ## 踩坑记录：暂停与取消的边界
 
-如果手指按下后应用失焦，没有收到正常 release，hold 可能永久保持。必须在取消、返回列表和生命周期清理时释放指针归属与旋转 hold。[scripts/app/main.gd:278](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/app/main.gd.txt:278) 和 cleanup 负责对应桥接。只测试“按下→移动→抬起”的理想流程，会错过真实手机上的系统手势中断。
+如果手指按下后应用失焦，没有收到正常 release，hold 可能永久保持。必须在取消、返回列表和生命周期清理时释放指针归属与旋转 hold。[scripts/app/main.gd:278](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/app/main.gd.txt:278)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/app/main.gd#L278) · [仓库内快照](source-baseline/scripts/app/main.gd.txt)） 和 cleanup 负责对应桥接。只测试“按下→移动→抬起”的理想流程，会错过真实手机上的系统手势中断。
 
 自动旋转与指定目标模式也会争夺控制。如果玩家正在精确点某一块，模型仍持续转动，点到的可能是另一块；当前选择期间暂停自动旋转。这里不是越多自动化越好，而是把不同操作状态的主导权写清楚。暂停游戏时则模拟时钟不推进，不应恢复后根据过去墙钟补转几十度。
 

@@ -14,13 +14,13 @@
 
 记当前格到世界变换为 T，格空间点 g 的世界位置为 `T*g`；世界点反算格位置为 `T.affine_inverse()*w`。点的变换包含平移，方向只通过 Basis 变换，不应把模型中心平移加进速度。单位方向需要归一化，速度另存为格/秒。这几个细节比记住函数名更重要，因为错用点和向量可能在模型原点附近看似正常，换位置后才出现斜飞。
 
-[scripts/voxel/voxel_model_node.gd:35](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/voxel/voxel_model_node.gd.txt:35) 提供当前变换。这里仍要记住第 4 章的适用条件：当前模型 voxel_size=1，渲染与碰撞存在半格约定差异，不能声称这个函数已经支持任意缩放的严格统一。教程的数学意图与实际实现边界需要同时呈现。
+[scripts/voxel/voxel_model_node.gd:35](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/voxel/voxel_model_node.gd.txt:35)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/voxel/voxel_model_node.gd#L35) · [仓库内快照](source-baseline/scripts/voxel/voxel_model_node.gd.txt)） 提供当前变换。这里仍要记住第 4 章的适用条件：当前模型 voxel_size=1，渲染与碰撞存在半格约定差异，不能声称这个函数已经支持任意缩放的严格统一。教程的数学意图与实际实现边界需要同时呈现。
 
 ## 动手步骤：沿一颗球追踪坐标
 
-从 [scripts/gameplay/fire_geometry.gd:30](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/gameplay/fire_geometry.gd.txt:30) 开始。屏幕炮口位置通过相机投射形成射线，再结合模型空间边界得到发射原点。这个过程回答“二维炮台画在哪里，三维球从哪里开始”。它不是拿屏幕 `(x,y)` 直接作为世界 `(x,y,0)`；相机位置、视角和模型姿态都参与计算。
+从 [scripts/gameplay/fire_geometry.gd:30](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/gameplay/fire_geometry.gd.txt:30)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/gameplay/fire_geometry.gd#L30) · [仓库内快照](source-baseline/scripts/gameplay/fire_geometry.gd.txt)） 开始。屏幕炮口位置通过相机投射形成射线，再结合模型空间边界得到发射原点。这个过程回答“二维炮台画在哪里，三维球从哪里开始”。它不是拿屏幕 `(x,y)` 直接作为世界 `(x,y,0)`；相机位置、视角和模型姿态都参与计算。
 
-控制器收到原点与 aim_grid_point 后，用两者之差算出格空间方向。[scripts/projectile/projectile_system.gd:40](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/projectile/projectile_system.gd.txt:40) 记录 local_pos、local_dir 和 speed。球每步前进多少由速度乘 dt 得到，世界矩阵不参与这一步的位移积分。教学公式如下，省略了碰撞与生命周期，不可直接替换正式实现：
+控制器收到原点与 aim_grid_point 后，用两者之差算出格空间方向。[scripts/projectile/projectile_system.gd:40](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/projectile/projectile_system.gd.txt:40)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/projectile/projectile_system.gd#L40) · [仓库内快照](source-baseline/scripts/projectile/projectile_system.gd.txt)） 记录 local_pos、local_dir 和 speed。球每步前进多少由速度乘 dt 得到，世界矩阵不参与这一步的位移积分。教学公式如下，省略了碰撞与生命周期，不可直接替换正式实现：
 
 ```gdscript
 # 教学简化版：位置和速度始终以格为单位。
@@ -34,13 +34,13 @@ var display_world: Vector3 = current_world_from_grid * p1
 
 为什么要连续检测？速度 120 格/秒、60Hz 时，一步可走 2 格；如果只测试终点是否位于方块内，就可能从方块前直接跳到后面。扫掠（Sweep）测试整条线段是否首次进入碰撞区域。帧率下降时单步更长，问题更明显，所以提高球速必须与连续碰撞一起考虑。
 
-碰撞分两层。空间索引以 DDA 遍历线段经过的格子并加入半径相关邻居，得到候选 ID；窄相求解器再计算每个候选盒的进入时间，选最早者。[scripts/voxel/voxel_spatial_index.gd:58](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/voxel/voxel_spatial_index.gd.txt:58) 与 [scripts/projectile/collision_solver.gd:8](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/projectile/collision_solver.gd.txt:8) 分别负责这两件事。只要候选集合漏了一块，窄相再精确也无能为力；候选多一点影响速度，候选少了影响正确性。
+碰撞分两层。空间索引以 DDA 遍历线段经过的格子并加入半径相关邻居，得到候选 ID；窄相求解器再计算每个候选盒的进入时间，选最早者。[scripts/voxel/voxel_spatial_index.gd:58](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/voxel/voxel_spatial_index.gd.txt:58)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/voxel/voxel_spatial_index.gd#L58) · [仓库内快照](source-baseline/scripts/voxel/voxel_spatial_index.gd.txt)） 与 [scripts/projectile/collision_solver.gd:8](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/projectile/collision_solver.gd.txt:8)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/projectile/collision_solver.gd#L8) · [仓库内快照](source-baseline/scripts/projectile/collision_solver.gd.txt)） 分别负责这两件事。只要候选集合漏了一块，窄相再精确也无能为力；候选多一点影响速度，候选少了影响正确性。
 
 当前求解器将盒子沿三个轴扩张 radius，然后做线段与 AABB 的 slab 相交。这是对球扫掠的保守盒扩张近似，角部并非严格球与盒的圆角闵可夫斯基边界。不要在教学中称它为“精确球体碰撞”。选靶和真实飞行使用同一模型，至少保持了可达性判断与命中的契约一致。若改成精确球盒算法，两边必须一起改并重新验证面角目标。
 
 slab 法可以理解成三个轴分别给出“线段在哪一段参数范围位于盒内”，再取这些区间的交集。某轴方向接近零时，不能直接除以零，而应判断起点是否已在该轴区间内。最终 t 在 0～1 之间表示本步最早接触。多个块同时命中时按稳定 ID 破平局，避免字典遍历顺序影响结果。
 
-物理结束后，[scripts/projectile/ball_physics.gd:34](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/projectile/ball_physics.gd.txt:34) 用本步的 world_from_grid 投影命中点、法线和速度，再发布事件。不能用发射时旧矩阵显示粒子，否则模型已经转动，爆炸却留在旧世界位置。当前法线转换直接用 basis，在纯旋转条件下合适；若引入非均匀缩放，应重新审视逆转置法线变换，而不是沿用后声称仍普遍正确。
+物理结束后，[scripts/projectile/ball_physics.gd:34](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/projectile/ball_physics.gd.txt:34)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/projectile/ball_physics.gd#L34) · [仓库内快照](source-baseline/scripts/projectile/ball_physics.gd.txt)） 用本步的 world_from_grid 投影命中点、法线和速度，再发布事件。不能用发射时旧矩阵显示粒子，否则模型已经转动，爆炸却留在旧世界位置。当前法线转换直接用 basis，在纯旋转条件下合适；若引入非均匀缩放，应重新审视逆转置法线变换，而不是沿用后声称仍普遍正确。
 
 ### 延伸练习：用两种变换检查不变量
 
@@ -54,7 +54,7 @@ slab 法可以理解成三个轴分别给出“线段在哪一段参数范围位
 
 历史记录里一个真实错误来自空间索引坐标打包。球从模型边界外出发会经过负格坐标，旧位打包与邻域偏移的组合造成借位或回绕，漏掉坐标 0 附近的候选。修复加入偏置并统一打包入口。这个案例说明“模型坐标非负”不代表“射线经过的所有格子非负”。算法的输入域应包括边界外起点。
 
-另一个回归发生在亚单位线段：本步末端还没进入目标格，但球半径已经接触扩张盒。若候选只看中心经过的格子，就会漏掉真实应该命中的邻格。开发记录 [docs/dev-step-log.md:377](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/docs/dev-step-log.md.txt:377) 保存了对应夹具思路。把这种极小反例固定下来，比只用高速大球测试更能发现边界问题。
+另一个回归发生在亚单位线段：本步末端还没进入目标格，但球半径已经接触扩张盒。若候选只看中心经过的格子，就会漏掉真实应该命中的邻格。开发记录 [docs/dev-step-log.md:377](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/docs/dev-step-log.md.txt:377)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/docs/dev-step-log.md#L377) · [仓库内快照](source-baseline/docs/dev-step-log.md.txt)） 保存了对应夹具思路。把这种极小反例固定下来，比只用高速大球测试更能发现边界问题。
 
 球的回收顺序也必须谨慎。若在产生 hit 时立即删掉全部球数据，稍后事件包装拿不到 shot_id；若永远保留 ended 球，长局内存会持续增长。当前先派发结果快照，再回收 ended 对象，并保留有界诊断历史。这是正确性和资源管理共同决定的顺序，不是单纯内存优化。
 

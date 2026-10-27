@@ -14,7 +14,7 @@
 
 模型 schema 版本描述字段协议，当前 loader 支持 2。`model_revision` 描述资产版本；内容哈希用来检验具体内容。即使 schema 没变，同一个 ID 对应的坐标也可能因重新导出资产而变化，所以“版本号仍为 2”不能证明旧存档安全。字段协议兼容与数据身份相同，是两个独立问题。
 
-[scripts/data/voxel_loader.gd:11](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/data/voxel_loader.gd.txt:11) 是读取入口。它检查文件存在、顶层对象、允许字段、voxel_size、调色板和每个体素坐标。允许块数为 300～6000，测试的小夹具通过 `enforce_range=false` 绕开数量范围，但不等于绕开全部校验。生产加载不应该为了让坏资产过关随意关掉校验。
+[scripts/data/voxel_loader.gd:11](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/data/voxel_loader.gd.txt:11)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/data/voxel_loader.gd#L11) · [仓库内快照](source-baseline/scripts/data/voxel_loader.gd.txt)） 是读取入口。它检查文件存在、顶层对象、允许字段、voxel_size、调色板和每个体素坐标。允许块数为 300～6000，测试的小夹具通过 `enforce_range=false` 绕开数量范围，但不等于绕开全部校验。生产加载不应该为了让坏资产过关随意关掉校验。
 
 ## 动手步骤：观察格式，再形成类型
 
@@ -53,9 +53,9 @@ PY
 
 JSON 对象的键是字符串，所以 palette 读入后要转换成整数色号。后面存档恢复也会遇到同一个问题：内存字典可能以整数炮台 ID 为键，落盘再读取后变成字符串。不能只在最后 restore 时转换，却在前置 validate 时仍按整数查询。数据归一化必须早于依赖归一化结果的校验。
 
-读取后 VoxelData 使用 PackedVector3Array 与 PackedInt32Array 保存坐标和颜色，见 [scripts/data/voxel_data.gd:8](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/data/voxel_data.gd.txt:8)。它还保存包围盒最小、最大坐标，通过 `center_offset()` 计算中心。中心取两端平均值可能是半整数，这不影响体素原始格坐标为整数。渲染时减去中心，模型就能围绕自身中心旋转，而不是绕 JSON 原点公转。
+读取后 VoxelData 使用 PackedVector3Array 与 PackedInt32Array 保存坐标和颜色，见 [scripts/data/voxel_data.gd:8](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/data/voxel_data.gd.txt:8)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/data/voxel_data.gd#L8) · [仓库内快照](source-baseline/scripts/data/voxel_data.gd.txt)）。它还保存包围盒最小、最大坐标，通过 `center_offset()` 计算中心。中心取两端平均值可能是半整数，这不影响体素原始格坐标为整数。渲染时减去中心，模型就能围绕自身中心旋转，而不是绕 JSON 原点公转。
 
-规则层通过 [scripts/data/game_rules.gd:29](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/data/game_rules.gd.txt:29) 把默认值与关卡覆盖合并。集中默认值的好处是能查到参数语义，关卡覆盖的好处是可做不同节奏。但“配表驱动”不代表所有字段都自动可配置；只有 from_rules 实际解析的键才会生效。新增一个 JSON 键而不接解析，是典型的看似完成、运行不变。
+规则层通过 [scripts/data/game_rules.gd:29](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/data/game_rules.gd.txt:29)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/data/game_rules.gd#L29) · [仓库内快照](source-baseline/scripts/data/game_rules.gd.txt)） 把默认值与关卡覆盖合并。集中默认值的好处是能查到参数语义，关卡覆盖的好处是可做不同节奏。但“配表驱动”不代表所有字段都自动可配置；只有 from_rules 实际解析的键才会生效。新增一个 JSON 键而不接解析，是典型的看似完成、运行不变。
 
 当前有效参数值得做一张记录：ball_speed 120 格/秒、auto_fire_interval 0.09 秒、单炮最多 6 发在途、全局最多 30 发、自动旋转 8 度/秒、合成上限 160。LOADING 和 RETIRING 时长则在控制器里定义，不在 rules JSON 中。教程不应把“所有可调参数都集中一处”当作已经达到的事实；当前代码只是把主要玩法参数集中，仍有表现与调度常量分散。
 

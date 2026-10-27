@@ -47,7 +47,7 @@ EOF
 "$GODOT_BIN" --editor --path "$TUTORIAL_LAB/sandbox"
 ```
 
-编辑器中选择新建“用户界面”场景，将根 Control 改名为 `HelloUI`。保存为 `hello.tscn`。在根下添加 Button，命名 `StartButton`，检查器把 Text 设置为“试一下”。选中按钮，用布局工具给它一个可见位置和足够大小。根节点挂接脚本 `hello.gd`，填写以下教学简化版。这段代码不是游戏已有文件，完整游戏装配入口见 [scripts/app/main.gd:30](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/app/main.gd.txt:30)。
+编辑器中选择新建“用户界面”场景，将根 Control 改名为 `HelloUI`。保存为 `hello.tscn`。在根下添加 Button，命名 `StartButton`，检查器把 Text 设置为“试一下”。选中按钮，用布局工具给它一个可见位置和足够大小。根节点挂接脚本 `hello.gd`，填写以下教学简化版。这段代码不是游戏已有文件，完整游戏装配入口见 [scripts/app/main.gd:30](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/app/main.gd.txt:30)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/app/main.gd#L30) · [仓库内快照](source-baseline/scripts/app/main.gd.txt)）。
 
 ```gdscript
 extends Control
@@ -64,7 +64,7 @@ func _on_start_pressed() -> void:
 
 认识五个面板时，以刚才的操作为线索：场景面板回答“对象如何嵌套”；文件系统回答“哪些资源已保存”；检查器回答“当前对象属性是什么”；节点面板提供信号等连接入口；输出与调试器回答“运行时到底发生了什么”。只在文件系统看见 `.gd`，不能证明它已经挂在节点上；检查器看见脚本路径，也不能证明该节点已进入当前运行的树。
 
-现在预览正式主场景 [scenes/main/main.tscn:12](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scenes/main/main.tscn.txt:12)。文件里只有 Main、Camera3D、DirectionalLight3D、WorldEnvironment 等基础节点，并没有你截图里看到的全部按钮。原因是 `main.gd` 在运行时创建控制器、表现节点和 CanvasLayer。以后调试这种工程，要切到运行时 Remote 场景树查看实际对象，不能仅凭编辑器静态树判断“HUD 丢了”。
+现在预览正式主场景 [scenes/main/main.tscn:12](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scenes/main/main.tscn.txt:12)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scenes/main/main.tscn#L12) · [仓库内快照](source-baseline/scenes/main/main.tscn.txt)）。文件里只有 Main、Camera3D、DirectionalLight3D、WorldEnvironment 等基础节点，并没有你截图里看到的全部按钮。原因是 `main.gd` 在运行时创建控制器、表现节点和 CanvasLayer。以后调试这种工程，要切到运行时 Remote 场景树查看实际对象，不能仅凭编辑器静态树判断“HUD 丢了”。
 
 > 📷 截图：HelloUI 场景树、Button 检查器与输出消息；建议在独立 sandbox 实验中自行截取。正式树可用运行时 Remote 面板截图。
 

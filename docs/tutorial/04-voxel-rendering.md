@@ -12,7 +12,7 @@
 
 这个游戏每个方块没有独立脚本，没有独立动画骨骼，也不依赖逐块物理节点。它们最重要的差别是位置、颜色和是否存活。MultiMesh 把共用几何与逐实例属性分离，恰好适合这种数据形态。节点树变小不意味着几何量消失，而是引擎可以更集中地处理相似对象。官方 [MultiMesh 优化说明](https://docs.godotengine.org/en/latest/tutorials/performance/using_multimesh.html) 介绍了这种批量绘制思路；本章按仓库代码讲具体实现。
 
-当前 renderer 用一个 BoxMesh、一个启用顶点色的 StandardMaterial3D，以及一个 MultiMesh。每个实例写入自己的 Transform3D 和 Color，见 [scripts/voxel/voxel_renderer.gd:16](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/voxel/voxel_renderer.gd.txt:16)。`instance_count` 分配实例容量，`visible_instance_count` 控制连续前缀内显示多少个。删除时不用重新创建全部节点，但需要保持可见数据集中在前缀，这就引出了尾交换算法。
+当前 renderer 用一个 BoxMesh、一个启用顶点色的 StandardMaterial3D，以及一个 MultiMesh。每个实例写入自己的 Transform3D 和 Color，见 [scripts/voxel/voxel_renderer.gd:16](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/voxel/voxel_renderer.gd.txt:16)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/voxel/voxel_renderer.gd#L16) · [仓库内快照](source-baseline/scripts/voxel/voxel_renderer.gd.txt)）。`instance_count` 分配实例容量，`visible_instance_count` 控制连续前缀内显示多少个。删除时不用重新创建全部节点，但需要保持可见数据集中在前缀，这就引出了尾交换算法。
 
 这里应区分至少四个数字：场景节点数、MultiMesh 容量、可见实例数、GPU 绘制调用数。源码里的 `renderer.instance_count()` 返回的是逻辑可见实例数，不是节点数，也不是 profiler 的 draw call 数。把它优化到 1 会只剩一块，甚至直接破坏胜利条件。真正的约束是“可见实例数等于存活数”。
 
@@ -54,9 +54,9 @@ func _ready() -> void:
 
 现在在纸上模拟尾交换。假设可见槽里放着 ID `[10,20,30,40]`，删除 ID20 时，把最后的 ID40 搬到索引1，序列变为 `[10,40,30]`。这一步改变的是渲染槽，不是体素 ID。必须同时更新 `voxel_of[1]=40`、`slot_of[40]=1`，并删除 `slot_of[20]`。位置和颜色也要一起搬，否则会出现模型形状正确、颜色错位的隐蔽问题。
 
-实现见 [scripts/voxel/voxel_renderer.gd:49](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/voxel/voxel_renderer.gd.txt:49)。镜像数组保存 CPU 可观察的变换和颜色，方便在 headless 下断言，因为虚拟渲染后端不能当作真正 GPU 缓冲验证工具。镜像不是第二套世界状态；它服务于渲染映射的检查，不能拿它代替存活集合决定业务。
+实现见 [scripts/voxel/voxel_renderer.gd:49](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/voxel/voxel_renderer.gd.txt:49)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/voxel/voxel_renderer.gd#L49) · [仓库内快照](source-baseline/scripts/voxel/voxel_renderer.gd.txt)）。镜像数组保存 CPU 可观察的变换和颜色，方便在 headless 下断言，因为虚拟渲染后端不能当作真正 GPU 缓冲验证工具。镜像不是第二套世界状态；它服务于渲染映射的检查，不能拿它代替存活集合决定业务。
 
-删除应通过 [scripts/voxel/voxel_manager.gd:41](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/voxel/voxel_manager.gd.txt:41) 统一进入。Manager 先确认存活，再同步状态、空间索引和 renderer。调用者只收到明确成功或失败。重复命中同一 ID 时第二次不能再减少数字，这种幂等语义以后会保护多球和事件重复投递场景。不要在 HUD 里直接执行剩余数减一，再希望底层最终跟上。
+删除应通过 [scripts/voxel/voxel_manager.gd:41](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/voxel/voxel_manager.gd.txt:41)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/voxel/voxel_manager.gd#L41) · [仓库内快照](source-baseline/scripts/voxel/voxel_manager.gd.txt)） 统一进入。Manager 先确认存活，再同步状态、空间索引和 renderer。调用者只收到明确成功或失败。重复命中同一 ID 时第二次不能再减少数字，这种幂等语义以后会保护多球和事件重复投递场景。不要在 HUD 里直接执行剩余数减一，再希望底层最终跟上。
 
 如果你想做逐节点对比实验，在另一份 preview 脚本中把每个坐标转成 MeshInstance3D，使用同一个共享 BoxMesh、同一材质、同一相机和相同阴影配置。先确认视觉一致，再分别记录创建耗时和稳定运行帧耗时。不要给朴素版每块一个独立材质，而给实例版共用材质，然后把全部差距归因于节点数量；实验改变了多个变量，结论就不干净。
 
@@ -80,7 +80,7 @@ MultiMesh 也不是万能渲染器。单个巨大批次的剔除粒度、局部�
 
 ## 验证方法
 
-运行 [tests/unit/test_voxel.gd:9](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/tests/unit/test_voxel.gd.txt:9) 对应的套件。它使用四块夹具，验证首次删除成功、重复删除失败、索引剔除、可见数一致、双向映射和位置正确。这比仅运行完整青蛙看“好像少了一块”更敏感。
+运行 [tests/unit/test_voxel.gd:9](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/tests/unit/test_voxel.gd.txt:9)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/tests/unit/test_voxel.gd#L9) · [仓库内快照](source-baseline/tests/unit/test_voxel.gd.txt)） 对应的套件。它使用四块夹具，验证首次删除成功、重复删除失败、索引剔除、可见数一致、双向映射和位置正确。这比仅运行完整青蛙看“好像少了一块”更敏感。
 
 ```bash
 "$GODOT_BIN" --headless --path "$TUTORIAL_LAB" \

@@ -56,11 +56,11 @@ print(out)
 PY
 ```
 
-历史 UX 构建报告 [reports/desktop/ux/build-info.md:5](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/reports/desktop/ux/build-info.md.txt:5) 的哈希属于当时包，不应该写进本次练习交付。它还注明基于 eab2e64、dirty 28 文件；教程源码固定在后续 003648e。两者的关联是历史开发演进，不是“同一 commit 的干净重建”。报告包含 dirty 并不使证据无效，但必须避免过度精确的可重建承诺。
+历史 UX 构建报告 [reports/desktop/ux/build-info.md:5](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/reports/desktop/ux/build-info.md.txt:5)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/reports/desktop/ux/build-info.md#L5) · [仓库内快照](source-baseline/reports/desktop/ux/build-info.md.txt)） 的哈希属于当时包，不应该写进本次练习交付。它还注明基于 eab2e64、dirty 28 文件；教程源码固定在后续 003648e。两者的关联是历史开发演进，不是“同一 commit 的干净重建”。报告包含 dirty 并不使证据无效，但必须避免过度精确的可重建承诺。
 
 ### 驱动真实 App 回放
 
-确认解文件存在于练习副本，使用真实已存在路径。回放入口读取 `--` 后的自定义参数，见 [scripts/app/replay_runner.gd:27](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/app/replay_runner.gd.txt:27)。它过滤解中的 fire 和 rotate 操作，只驱动 place/park；真正开火由游戏调度器决定，自动旋转持续改变可达性。回放没有直接把存活数写成零。
+确认解文件存在于练习副本，使用真实已存在路径。回放入口读取 `--` 后的自定义参数，见 [scripts/app/replay_runner.gd:27](/Users/zhaojian/code/godot-voxel-block-smash/docs/tutorial/source-baseline/scripts/app/replay_runner.gd.txt:27)（[GitHub 源码](https://github.com/AdrianAndroid/godot-voxel-block-smash/blob/003648e3ac102692c9722b441ba2f801c2f6ac1d/scripts/app/replay_runner.gd#L27) · [仓库内快照](source-baseline/scripts/app/replay_runner.gd.txt)）。它过滤解中的 fire 和 rotate 操作，只驱动 place/park；真正开火由游戏调度器决定，自动旋转持续改变可达性。回放没有直接把存活数写成零。
 
 ```bash
 test -f "$TUTORIAL_LAB/reports/desktop/cq/s03-solution.json"
