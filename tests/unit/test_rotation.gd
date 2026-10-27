@@ -47,15 +47,46 @@ func _run() -> void:
 	after = _voxel_screen_pos(main, marker)
 	_check(after.y > before.y + 3.0, "偏航90°后下拖→前面标记下移", "%.1f→%.1f" % [before.y, after.y])
 
-	# 俯仰边界：连续大幅下 drag 不超过 70° 且模型中心不漂移
+	# 俯仰边界：连续大幅下 drag 平滑截止于 60°（P1：越界部分丢弃、反向立即响应），中心不漂移
 	main.enter_level("level_01", {})
 	var center0: Vector3 = main.controller.voxel_model.global_transform.origin
 	for i in 20:
 		_drag(main, Vector2(0, 400))
 	var basis: Basis = main.controller.voxel_model.global_transform.basis
 	var tilt: float = asin(clampf((basis * Vector3(0, 0, -1)).normalized().dot(Vector3.UP), -1.0, 1.0))
-	_check(absf(tilt) <= 1.2218, "俯仰钳制 ±70°", "tilt=%.3f" % tilt)
+	_check(absf(tilt) <= 1.0473, "俯仰钳制 ±60°（P1 新限位）", "tilt=%.3f" % tilt)
+	_check(absf(absf(tilt) - 1.0472) < 0.01, "到达边界即满幅（不吞输入卡旧值）", "tilt=%.3f" % tilt)
 	_check(center0.is_equal_approx(main.controller.voxel_model.global_transform.origin), "旋转中心不漂移", "")
+	# UX03：边界处反向拖动立即离开（旧实现吞整段输入）
+	_drag(main, Vector2(0, -50))
+	var tilt2: float = asin(clampf((main.controller.voxel_model.global_transform.basis
+		* Vector3(0, 0, -1)).normalized().dot(Vector3.UP), -1.0, 1.0))
+	_check(absf(tilt2) < absf(tilt) - 0.02, "边界反向拖动立即响应", "%.3f→%.3f" % [tilt, tilt2])
+
+	# UX02：交替右/下/左/上等幅拖动 20 轮——yaw/pitch 回到初值、无 roll 积累（up 不偏出竖直面）
+	main.enter_level("level_01", {})
+	var a0: Vector2 = main.controller.view_angles()
+	for i in 20:
+		_drag(main, Vector2(120, 0))
+		_drag(main, Vector2(0, 120))
+		_drag(main, Vector2(-120, 0))
+		_drag(main, Vector2(0, -120))
+	var a1: Vector2 = main.controller.view_angles()
+	# yaw 在 ±PI 环绕等价（3.141593 vs -3.141593 是同一姿态），按环绕差比较
+	_check(absf(wrapf(a1.x - a0.x, -PI, PI)) < 1e-4 and absf(a1.y - a0.y) < 1e-4,
+		"交替等幅拖动 20 轮姿态回到初值（不积累侧倾）", "%s→%s" % [str(a0), str(a1)])
+	var up_v: Vector3 = main.controller.voxel_model.global_transform.basis.y
+	_check(absf(up_v.x) < 1e-4 and up_v.y > 0.999, "up 轴无 roll 分量", str(up_v))
+
+	# UX01/侧面不倒立：yaw 偏到侧面（90°/270°）后大幅下拖，up.y 始终 >0（旧实现此处可倒立）
+	for yaw_off in [PI / 2, -PI / 2]:
+		main.enter_level("level_01", {})
+		main.controller.set_view_pose(PI + yaw_off, 0.0)
+		for i in 10:
+			_drag(main, Vector2(0, 500))
+		var up_side: Vector3 = main.controller.voxel_model.global_transform.basis.y
+		_check(up_side.y > 0.4, "侧面（yaw%+d°）持续下拖不倒立" % int(rad_to_deg(yaw_off)),
+			"up=%s pitch=%.2f" % [str(up_side), main.controller.view_angles().y])
 
 	# 灵敏度：横扫展示区宽度 ≈180°
 	main.enter_level("level_01", {})
@@ -74,9 +105,11 @@ func _run() -> void:
 
 func _drag(main: Node, delta: Vector2) -> void:
 	main.router.handle_press(0, false)
-	var rot: Vector2 = main.router.handle_drag(0, delta)
-	main._apply_rotation(rot)
+	var px: Vector2 = main.router.handle_drag(0, delta)
+	main._apply_rotation(px)
 	main.router.handle_release(0)
+	# P1：输入入队后在物理步统一应用；测试同步冲刷（dt=0：只应用手动增量，不推进玩法）
+	main.controller._apply_view_rotation(0.0)
 
 
 # 瞳孔（color_id=7）世界坐标屏幕投影质心

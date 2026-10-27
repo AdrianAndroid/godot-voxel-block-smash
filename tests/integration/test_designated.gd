@@ -126,6 +126,13 @@ func _run() -> void:
 	gc.bus.subscribe("turret_fire", func(a: Array, _m: Dictionary) -> void:
 		fired.n += 1
 		fired.vid = int(a[0].get("target_voxel_id", -1)), "level_01")
+	# P2：先走完 LOADING 上位时钟（0.28s 模拟时钟内不开火）。等待期间屏蔽发射原点，
+	# 防止调度落地后抢先自动发射打掉指定目标；恢复原点后再显式调用发射入口验证优先锁定
+	var saved_resolver: Callable = gc.origin_resolver
+	gc.origin_resolver = Callable()
+	for i in 20:
+		gc.step(1.0 / 60.0)
+	gc.origin_resolver = saved_resolver
 	var fres: Dictionary = gc.try_auto_fire(slot)
 	_check(fres.ok and fired.n == 1 and fired.vid == vid1, "指定目标优先发射",
 		"res=%s n=%d vid=%d want=%d" % [str(fres), fired.n, fired.vid, vid1])

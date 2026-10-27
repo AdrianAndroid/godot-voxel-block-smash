@@ -1,0 +1,1 @@
+{"schema_version":1,"level_id":"level_ux_targeting","display_number":901,"model_path":"res://assets/models/json/ux_targeting_300.json","model_revision":"1.0","rules":{"initial_slots":5,"merge_max":99,"ball_speed":120.0,"auto_fire_interval":0.09,"max_in_flight_per_turret":6,"max_active_projectiles":30,"auto_rot_deg_per_sec":8.0},"queue_seed":7}

@@ -10,6 +10,7 @@ var hit := 0                 # HIT 结算（真实删块）
 var cancel_reasons := {}     # reason -> count（mismatch/timeout/out_of_bounds/...）
 var waiting_target := 0      # 等待同色目标次数（按发射尝试计）
 var scan_pending := 0        # 时间片未扫完次数
+var revalidate_failed := 0   # P4 §6.3：分片结果当前原点终核失败次数（等待原因可审计）
 var flight_times: Array[float] = []  # 有界（256）：每发飞行时长秒（出膛→结算）
 var destroyed_total := 0
 var _destroy_marks: Array[float] = []  # 最近 10s 消除时间戳（滚动窗口，clock 注入）
@@ -29,6 +30,8 @@ func on_wait(reason: String) -> void:
 		waiting_target += 1
 	elif reason == "scan_pending":
 		scan_pending += 1
+	elif reason == "revalidate_failed":
+		revalidate_failed += 1
 
 
 func on_hit(flight_sec: float) -> void:
@@ -89,6 +92,7 @@ func snapshot() -> Dictionary:
 		"cancel_reasons": cancel_reasons.duplicate(),
 		"waiting_target": waiting_target,
 		"scan_pending": scan_pending,
+		"revalidate_failed": revalidate_failed,
 		"destroyed_total": destroyed_total,
 		"destroys_per_sec": snappedf(destroys_per_sec(), 0.01),
 		"avg_flight_ms": int(avg_flight_sec() * 1000.0),

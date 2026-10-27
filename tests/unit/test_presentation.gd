@@ -114,6 +114,9 @@ func _run() -> void:
 	hud2._on_slot_pressed(0)
 	_check(fires2.n == 0 and hud2._toast_label.text.contains("自动连发"), "点击已占位槽位不发射仅提示",
 		"fires=%d toast=%s" % [fires2.n, hud2._toast_label.text])
+	# P2：走完 LOADING 上位时钟（本测试无 origin_resolver，落地后也不会开火）
+	for i in 20:
+		gc2.step(1.0 / 60.0)
 	# 取回模式：点击槽位调用 return_turret（无在途弹立即回来源列队首）
 	var tid0 := int(gc2.session.slots[0])
 	var origin_col := int(gc2.session.turrets[tid0].origin_column)
@@ -196,15 +199,16 @@ func _run() -> void:
 	_check(int(hud2._col_offset[deep]) == 0, "滚回顶部", "")
 	hud2._on_column_tap(deep, Vector2(10, 150))
 	_check(gc2.session.queue_columns[deep].size() == n_before, "点击后排窗口不操作", "")
-	# 上位动画：数据事务先完成，残影+整体上移为纯表现
-	await create_timer(0.3).timeout  # 先让本用例早前那次上位的残影回收，再取基线
-	var children_before := hud2.get_child_count()
+	# 上位过渡（P2）：数据事务先完成，完整炮台在过渡层飞行+整体上移为纯表现
+	await create_timer(0.4).timeout  # 先让本用例早前那次上位的过渡炮落地回收，再取基线
+	var children_before: int = hud2._transition_layer.get_child_count()
 	hud2._on_column_tap(deep, Vector2(10, 50))
 	_check(gc2.session.queue_columns[deep].size() == n_before - 1, "上位数据事务完成", "")
-	_check(hud2.get_child_count() == children_before + 1, "上位残影节点生成（表现）",
-		"%d→%d" % [children_before, hud2.get_child_count()])
-	await create_timer(0.4).timeout
-	_check(hud2.get_child_count() == children_before, "残影 0.18s 后回收", "")
+	_check(hud2._transition_layer.get_child_count() == children_before + 1,
+		"上位过渡炮节点生成（完整炮台飞行，非残影）",
+		"%d→%d" % [children_before, hud2._transition_layer.get_child_count()])
+	await create_timer(0.6).timeout  # LOADING 0.28s 落地后回收（真实帧驱动控制器时钟）
+	_check(hud2._transition_layer.get_child_count() == children_before, "过渡炮落地后回收", "")
 	_check(absf(float(hud2._col_shift[deep])) < 1.0, "整体上移动画收敛", "shift=%f" % hud2._col_shift[deep])
 
 	# --- 关卡列表（T20） ---

@@ -75,8 +75,10 @@ func tick(dt: float) -> void:
 				_fail_streak.erase(id)
 				_cooldowns[id] = interval
 				continue
-			if reason == "scan_pending":
+			if reason == "scan_pending" or reason == "revalidate_failed":
 				# FM/F2 §5.3：时间片扫描未完成 → 下一物理步立即续扫（断点续扫便宜）
+				# P4 §6.3：当前原点终核失败（分片锚定旧原点）→ 同样下步立即重找，
+				# 不等待完整射击冷却（遮挡随旋转变化，重查要勤）
 				_fail_streak.erase(id)
 				_cooldowns[id] = 0.0
 				continue

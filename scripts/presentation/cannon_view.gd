@@ -5,7 +5,9 @@ class_name CannonView
 ## 分层素材（tools/cannon_gen.py 自制 CC0）：底座 + 炮身（白色→palette 染色）+ 炮管（绕枢轴旋转）
 ## + 炮口闪光；弹药数字白字粗描边（1~160）。炮管朝向目标屏幕投影；muzzle_screen_center()
 ## 提供可见炮口的屏幕坐标（发射起点契约）。
-## 状态：empty/locked/queued/back/front/waiting/draining + recoil/flash 瞬时效果。
+## 状态：empty/locked/queued/back/front/waiting/draining/loading/retiring + recoil/flash 瞬时效果。
+## 2026-10-27 P2/P3：loading=上位中只显示底座落点提示（完整炮在过渡层飞行）；
+## retiring=耗尽退场中（缩放/淡出由 HUD 按控制器 retire_progress 逐帧驱动）。
 
 signal pressed
 
@@ -157,7 +159,8 @@ func fire_feedback() -> void:
 func _apply_state() -> void:
 	if _label == null:
 		return
-	var show_cannon := state not in ["empty", "locked"]
+	# P2：loading 态只显示底座（落点提示），完整炮台在过渡层飞行——槽内不提前冒出第二门
+	var show_cannon := state not in ["empty", "locked", "loading"]
 	_body.visible = show_cannon
 	_barrel.visible = show_cannon
 	_base.visible = true  # 底座常驻（炮位存在感）
@@ -169,6 +172,9 @@ func _apply_state() -> void:
 		"locked":
 			_state_label.text = "锁"
 			_base.modulate = Color(0.4, 0.4, 0.45, 0.6)
+		"loading":
+			_state_label.text = ""
+			_base.modulate = Color(1, 1, 1, 0.55)  # 落点提示：底座半亮
 		_:
 			_state_label.text = ""
 			_base.modulate = Color.WHITE
@@ -183,7 +189,7 @@ func _apply_state() -> void:
 			"waiting":  # 等待目标：略降饱和提示
 				_body.modulate = tint.lerp(Color(0.7, 0.7, 0.75), 0.35)
 				_barrel.modulate = Color(0.85, 0.85, 0.9)
-			"draining":  # 归零结算中：灰化
+			"draining", "retiring":  # 归零结算中 / 耗尽退场中：灰化（retiring 另由 HUD 驱动缩放淡出）
 				_body.modulate = tint.lerp(Color(0.4, 0.4, 0.45), 0.6)
 				_barrel.modulate = Color(0.5, 0.5, 0.55)
 			_:  # queued/front

@@ -27,6 +27,10 @@ var _last_target: Dictionary = {}
 var _scan_state: Dictionary = {}  # ckey -> {start, k, ii, gen, tver0, skipped_reserved}（时间片断点）
 var _rr_cursor: Dictionary = {}   # FM/F2：color_id -> 下次全扫起始桶（持续旋转下有界轮转，防饥饿）
 var _tver := 0                    # FM/F2：模型变换版本（控制器每步注入；负缓存随 gen+tver 双匹配失效）
+var _sim_now := 0.0               # 2026-10-27 P4：模拟时钟（控制器每步注入；独立使用时恒 0
+                                  # → TTL 永不超时，退化为 FM/F5 gen+ckey 语义，时钟域不混用）
+var _step_budget_left := 6000     # P4 §6.2.6：全局每步选靶预算（覆盖所有炮/点/候选构建）
+var _budget_armed := false        # begin_step() 调用后才启用全局预算（独立测试保持按次预算）
 # 共享扫描几何（S10 性能）：buckets 只依赖 (color, gen)——按到模型中心距离分桶，
 # 与炮口原点无关 → 同色 4 炮塔每 gen 只付一次压缩+分桶，不再每原点重建（真机
 # 每原点冷建 ~10-20ms × 4 同帧叠加曾致 100ms+ 帧尖刺）。原点相关的可达性仍由
@@ -37,7 +41,12 @@ var _destroy_gen := 0
 const NBUCKET := 24  # 距离分桶数（替代 lambda 排序：近者优先只影响早退速度）
 
 var scan_budget_us := 3000  # 单次 find_target 时间片预算（测试可注入小值验证断点续扫）
+var step_budget_us := 6000  # P4：每物理步全部炮台共享的选靶预算（begin_step 重置）
 var dbg_neg_served := 0     # 测试观测：负缓存命中次数
+
+# 2026-10-27 P4 §6.3：负缓存有界失效——几何（gen+tver）精确匹配长期服务；
+# 旋转中（tver 每步变）只做 TTL≤100ms 的短暂退避，原点格驻留期内也不永久封锁。
+const NEG_TTL_SEC := 0.1
 
 # 暴露面位掩码（S10 性能预过滤）：bit i = DIRS6[i] 方向面暴露（邻格空）。
 # 首中必经暴露面 ⇒ 原点必须在该面外侧半空间（dot(origin-center, n) > 阈值），
@@ -62,6 +71,22 @@ func setup(voxel_manager: RefCounted, ball_radius: float = 0.35) -> void:
 # 扫描实时复核；同一 tver 内完整扫完才允许写负缓存（见 find_target 尾部）。
 func set_transform_version(tver: int) -> void:
 	_tver = tver
+
+
+# 2026-10-27 P4 §6.3：模拟时钟注入（负缓存 TTL 用模拟秒，headless 快进不受墙钟影响）
+func set_clock(sim_now: float) -> void:
+	_sim_now = sim_now
+
+
+func _now() -> float:
+	return _sim_now
+
+
+# P4 §6.2.6：全局预算——每物理步一次（控制器 step 顶部调用），覆盖本步所有炮台的
+# 扫描切片；独立使用（单元测试不调用）时按次预算、行为与旧版一致。
+func begin_step() -> void:
+	_step_budget_left = step_budget_us
+	_budget_armed = true
 
 
 func _rebuild_frontier() -> void:
@@ -121,14 +146,17 @@ func find_target(color_id: int, origin_grid: Vector3, is_available: Callable) ->
 	var ckey := "%d|%d,%d,%d" % [color_id, floori(origin_grid.x * 0.5),
 		floori(origin_grid.y * 0.5), floori(origin_grid.z * 0.5)]
 	var cached: Dictionary = _target_cache.get(ckey, {})
-	# FM/F5 节奏：负缓存只要求 gen+ckey 匹配（不再双匹配 tver）——ckey 已把世界固定原点
-	# 量化到 2 格网格，旋转导致的原点漂移在每格驻留 ~0.4s 内自然换新 key 重扫；
-	# tver 双匹配在持续旋转下永不命中，饥饿炮台每步全扫会吃光 CPU（实测 wait_ratio 0.89）。
-	# 代价：格边界附近否定结论最坏滞后一个驻留周期，仅表现为短暂等待，无错发。
+	# FM/F5 节奏 + P4 §6.3 有界失效：负缓存要求 gen 匹配，且（tver 精确匹配＝几何未变，
+	# 长期服务）或（TTL≤100ms 短暂退避——持续旋转下同原点格内目标变可达不永久封锁，UX11）。
+	# ckey 把世界固定原点量化到 2 格网格，原点跨格自然换新 key 重扫；错发不可能
+	# （任何肯定结论都由实时 DDA+扫掠复核产出），滞后仅表现为短暂等待。
 	if bool(cached.get("neg", false)) and int(cached.get("gen", -1)) == _destroy_gen:
-		dbg_neg_served += 1
-		return {"ok": false, "reason": "no_reachable_target"}  # 缓存的否定结果（gen+ckey 匹配）
-	# 热点复核：上次目标（可能已被自己打掉）+ 其 6 邻同色存活块
+		var age := _now() - float(cached.get("sim_t", -1.0e9))
+		if int(cached.get("tver", -1)) == _tver \
+				or (age >= 0.0 and age <= NEG_TTL_SEC):
+			dbg_neg_served += 1
+			return {"ok": false, "reason": "no_reachable_target"}  # 缓存的否定结果
+	# 热点复核：上次目标（可能已被自己打掉）+ 其 6 邻同色存活块（多点确认，P4 §6.2）
 	var hot := int(_last_target.get(ckey, -1))
 	if hot >= 0 and hot < _data.count:
 		var tries: Array = [hot]
@@ -138,13 +166,18 @@ func find_target(color_id: int, origin_grid: Vector3, is_available: Callable) ->
 			if nid >= 0 and int(_data.color_ids[nid]) == color_id:
 				tries.append(nid)
 		for vid in tries:
-			if is_available.call(vid) and confirm_reachable(vid, origin_grid):
+			if not is_available.call(vid):
+				continue
+			var hc: Dictionary = confirm_reachable_mp(vid, origin_grid)
+			if hc.get("ok", false):
 				_last_target[ckey] = vid
 				return {"ok": true, "voxel_id": vid,
-					"target_grid_center": _data.positions[vid] + Vector3(0.5, 0.5, 0.5)}
+					"target_grid_center": _data.positions[vid] + Vector3(0.5, 0.5, 0.5),
+					"aim_grid_point": hc.aim_grid_point, "face_id": int(hc.face_id),
+					"origin_used": origin_grid, "geometry_version": _destroy_gen}
 	var cand_list: Array = _frontier.get(color_id, [])
 	if cand_list.is_empty():
-		_target_cache[ckey] = {"neg": true, "gen": _destroy_gen, "tver": _tver}
+		_target_cache[ckey] = {"neg": true, "gen": _destroy_gen, "tver": _tver, "sim_t": _now()}
 		return {"ok": false, "reason": "no_alive_color"}
 	# 全扫描兜底：时间片 ≤3ms/次（S10：单帧预算保护）。断点续扫状态按 (key,gen) 保存，
 	# 体素删除推进 gen 后作废重扫；预订变化不推进 gen，恢复扫描时实时复查。
@@ -201,9 +234,12 @@ func find_target(color_id: int, origin_grid: Vector3, is_available: Callable) ->
 		var n: int = (bucket as Array).size()
 		while ii < n:
 			# FM/F2：预算检查在内层每次迭代顶部——三条 continue 路径与扫掠都受控
-			if Time.get_ticks_usec() - _slice_t0 > scan_budget_us:  # 时间片用尽：存断点下次续扫
+			# P4 §6.2.6：全局步预算（begin_step 重置）——所有炮台共享，防每炮 3ms 叠加
+			if Time.get_ticks_usec() - _slice_t0 > scan_budget_us \
+					or (_budget_armed and _step_budget_left <= 0):
 				st.ii = ii
 				_scan_state[ckey] = st
+				_step_budget_left -= int(Time.get_ticks_usec() - _slice_t0)
 				_prune_caches()
 				return {"ok": false, "reason": "scan_pending"}
 			var vid: int = bucket[ii]
@@ -222,26 +258,44 @@ func find_target(color_id: int, origin_grid: Vector3, is_available: Callable) ->
 					break
 			if not facing:
 				continue
-			if _los_blocked(scan_origin, center):
-				continue
-			var cands: Array = _voxels.sweep_candidates(scan_origin, center, _radius)
-			var hit: Dictionary = Solver.sweep(scan_origin, center, _radius, cands,
-				func(id: int) -> Vector3: return _data.positions[id])
-			if bool(hit.get("hit", false)) and int(hit.get("voxel_id", -1)) == vid:
+			# P4 §6.2：先试中心（DDA 预过滤+完整扫掠）；失败再对朝向原点的暴露面
+			# 采样 5 点（面中心+0.2/0.8 内缩角）——面点射线落格与中心不同，但瞄点
+			# 在目标块内（向块内偏 0.06），DDA 终点=目标格不会误伤自身/邻格，仍有效。
+			var aim := Vector3.ZERO
+			var face_id := -1
+			var confirmed := false
+			if not _los_blocked(scan_origin, center):
+				var cands0: Array = _voxels.sweep_candidates(scan_origin, center, _radius)
+				var hit0: Dictionary = Solver.sweep(scan_origin, center, _radius, cands0,
+					func(id: int) -> Vector3: return _data.positions[id])
+				if bool(hit0.get("hit", false)) and int(hit0.get("voxel_id", -1)) == vid:
+					aim = center
+					confirmed = true
+			if not confirmed:
+				var mp: Dictionary = _confirm_face_points(vid, scan_origin)
+				if mp.get("ok", false):
+					aim = mp.aim_grid_point
+					face_id = int(mp.face_id)
+					confirmed = true
+			if confirmed:
 				_last_target[ckey] = vid
 				_scan_state.erase(ckey)
 				_rr_cursor[color_id] = (bi + 1) % NBUCKET  # 下次从本桶之后开始
+				_step_budget_left -= int(Time.get_ticks_usec() - _slice_t0)
 				_prune_caches()
-				return {"ok": true, "voxel_id": vid, "target_grid_center": center}
+				return {"ok": true, "voxel_id": vid, "target_grid_center": center,
+					"aim_grid_point": aim, "face_id": face_id,
+					"origin_used": scan_origin, "geometry_version": _destroy_gen}
 		st.k = int(st.k) + 1
 		st.ii = 0
 	# 扫完无目标：有候选因预订被跳过时不缓存否定（预订释放可能翻正，预订不推进 gen）。
-	# FM/F5：跨 tver 扫描的否定也允许缓存——续扫各片用当片原点（实时正确），
-	# 结论按 ckey 原点格服务，驻留周期后原点格变化自然重扫（见 find_target 头部注释）。
+	# 否定结论带 gen+tver+写入时刻：几何不变（tver 匹配）长期服务；旋转中 TTL≤100ms
+	# 短暂退避（P4 §6.3），同原点格内目标变可达不永久封锁。
 	_scan_state.erase(ckey)
 	_rr_cursor[color_id] = (int(st.start) + 1) % NBUCKET
 	if not bool(st.skipped_reserved):
-		_target_cache[st.ckey0] = {"neg": true, "gen": _destroy_gen, "tver": _tver}
+		_target_cache[st.ckey0] = {"neg": true, "gen": _destroy_gen, "tver": _tver, "sim_t": _now()}
+	_step_budget_left -= int(Time.get_ticks_usec() - _slice_t0)
 	_prune_caches()
 	return {"ok": false, "reason": "no_reachable_target"}
 
@@ -270,13 +324,78 @@ func pick_voxel(from_grid: Vector3, dir_grid: Vector3, max_dist: float) -> int:
 
 # CQ/S08 §2.4：指定目标可达性确认——与正常选靶同一扫掠契约（目标必须首个命中）
 func confirm_reachable(voxel_id: int, origin_grid: Vector3) -> bool:
+	return confirm_reachable_mp(voxel_id, origin_grid).get("ok", false)
+
+
+# 2026-10-27 P4 §6.2 多点确认（指定目标与普通自动选靶同一接口，标准一致）：
+# 先试体素中心；中心被挡则对朝向原点的暴露面采样 5 点（面中心 + 0.2/0.8 内缩角），
+# 瞄点向块内偏移 0.06 格（保证扫掠穿过目标扩张盒表面，不停在浮点边界）。
+# 返回 {ok, aim_grid_point, face_id}（face_id=-1 表示中心瞄点）；所有点都以真实球半径
+# 完整扫掠，只有 first_hit==目标才接受（不穿透异色/邻块，无合法点则不发射）。
+func confirm_reachable_mp(voxel_id: int, origin_grid: Vector3) -> Dictionary:
+	if not _voxels.is_alive(voxel_id):
+		return {"ok": false}
+	var center: Vector3 = _data.positions[voxel_id] + Vector3(0.5, 0.5, 0.5)
+	if not _los_blocked(origin_grid, center):
+		var cands: Array = _voxels.sweep_candidates(origin_grid, center, _radius)
+		var hit: Dictionary = Solver.sweep(origin_grid, center, _radius, cands,
+			func(id: int) -> Vector3: return _data.positions[id])
+		if bool(hit.get("hit", false)) and int(hit.get("voxel_id", -1)) == voxel_id:
+			return {"ok": true, "aim_grid_point": center, "face_id": -1}
+	return _confirm_face_points(voxel_id, origin_grid)
+
+
+# 面采样（P4 §6.2.2）：每暴露面 5 点，面内 UV 取 0.2/0.5/0.8（避开数学边缘）；
+# 只试朝向原点的面（原点在该面外侧半空间），每点 DDA 预过滤 + 完整扫掠确认。
+const AIM_INSET := 0.06  # 瞄点向块内偏移（格）
+const FACE_UV := [0.2, 0.5, 0.8]
+
+
+func _confirm_face_points(voxel_id: int, origin_grid: Vector3) -> Dictionary:
+	var center: Vector3 = _data.positions[voxel_id] + Vector3(0.5, 0.5, 0.5)
+	var rel := origin_grid - center
+	var mask := int(_face_mask[voxel_id])
+	for fi in 6:
+		if not (mask & (1 << fi)):
+			continue
+		var n: Vector3 = DIRV6[fi]
+		if rel.dot(n) <= 0.2:  # 原点须在该面外侧（宽松阈值，扫掠兜底正确性）
+			continue
+		# 面内两轴 = 法向为零的两轴
+		var a1 := 0
+		var a2 := 1
+		if n.x != 0.0:
+			a1 = 1
+			a2 = 2
+		elif n.y != 0.0:
+			a1 = 0
+			a2 = 2
+		for u in FACE_UV:
+			for v in FACE_UV:
+				if (u != 0.5 or v != 0.5) and (u == 0.5 or v == 0.5):
+					continue  # 面中心 + 四角内缩（跳过边中点，每面 5 点）
+				var p := center + n * (0.5 - AIM_INSET)
+				p[a1] += u - 0.5
+				p[a2] += v - 0.5
+				if _los_blocked(origin_grid, p):
+					continue
+				var cands: Array = _voxels.sweep_candidates(origin_grid, p, _radius)
+				var hit: Dictionary = Solver.sweep(origin_grid, p, _radius, cands,
+					func(id: int) -> Vector3: return _data.positions[id])
+				if bool(hit.get("hit", false)) and int(hit.get("voxel_id", -1)) == voxel_id:
+					return {"ok": true, "aim_grid_point": p, "face_id": fi}
+	return {"ok": false}
+
+
+# P4 §6.3 最终复核：分片扫描的成功候选可能锚定旧原点（origin0），发射前必须用
+# 本次真实炮口对同一 aim_grid_point 复核——失败则不扣弹不发射（继续找目标）。
+func confirm_aim(voxel_id: int, aim_grid_point: Vector3, origin_grid: Vector3) -> bool:
 	if not _voxels.is_alive(voxel_id):
 		return false
-	var center: Vector3 = _data.positions[voxel_id] + Vector3(0.5, 0.5, 0.5)
-	if _los_blocked(origin_grid, center):
+	if _los_blocked(origin_grid, aim_grid_point):
 		return false
-	var cands: Array = _voxels.sweep_candidates(origin_grid, center, _radius)
-	var hit: Dictionary = Solver.sweep(origin_grid, center, _radius, cands,
+	var cands: Array = _voxels.sweep_candidates(origin_grid, aim_grid_point, _radius)
+	var hit: Dictionary = Solver.sweep(origin_grid, aim_grid_point, _radius, cands,
 		func(id: int) -> Vector3: return _data.positions[id])
 	return bool(hit.get("hit", false)) and int(hit.get("voxel_id", -1)) == voxel_id
 

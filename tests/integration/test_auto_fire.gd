@@ -180,6 +180,17 @@ func _run() -> void:
 	gc4.place_front(col4)
 	var tid4 := int(gc4.session.slots[0])
 	var ocol := int(gc4.session.turrets[tid4].origin_column)
+	# P2：上位中（LOADING 0.28s）取回被拒——走完上位时钟再取回
+	var ret0: Dictionary = gc4.return_turret(0)
+	_check(not ret0.ok and str(ret0.get("reason", "")) == "loading", "上位中取回被拒（上位中）", str(ret0))
+	# 走完 LOADING 时钟；期间摘掉原点解析器防其落地即开火（本用例要"未发射"语义）
+	var saved_resolver: Callable = gc4.origin_resolver
+	gc4.origin_resolver = Callable()
+	for i in 20:
+		gc4.step(1.0 / 60.0)
+	_check(str(gc4.session.turrets[tid4].state) == "READY", "LOADING 时钟到点转 READY",
+		str(gc4.session.turrets[tid4].state))
+	gc4.origin_resolver = saved_resolver
 	var ret: Dictionary = gc4.return_turret(0)
 	_check(ret.ok and not ret.get("pending", true), "未发射立即取回", str(ret))
 	_check(int(gc4.session.slots[0]) == -1 and int(gc4.session.queue_columns[ocol][0]) == tid4,

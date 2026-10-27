@@ -133,12 +133,65 @@ func _initialize() -> void:
 	_check(lr2.exists and not lr2.ok, "损坏存档拒绝", str(lr2))
 	repo.delete_save("level_01")
 	repo.delete_save("level_02")
-	DirAccess.remove_absolute(tp)
-	DirAccess.remove_absolute(test_dir)
 
 	# 关卡列表排序
 	var levels: Array = catalog.list_levels()
 	_check(levels.size() >= 1 and levels[0].level_id == "level_01", "关卡列表", str(levels.size()))
+
+	# §9 E2E 需要 GameController._ready（level_loader 在 Node 生命周期装配），
+	# _initialize 阶段直接 start_level 会因依赖未就绪而失败——延迟到首帧后执行。
+	_test_dir = test_dir
+	_tp = tp
+	_catalog = catalog
+	call_deferred("_run_e2e")
+
+
+# 2026-10-27 §9：磁盘端到端——控制器真实游玩中局存档（含槽位占用+队列引用）→
+# 磁盘 JSON 读回（turrets 键变 String）→ start_level 恢复。此前 validate_snapshot
+# 在 restore 归一化之前用 has(int) 查 String 键，真实中局存档恒被拒（queue_refs_missing_turret），
+# 本用例即当时的盲区（旧用例只测 restore()，restore 自己会归一化键）。
+var _test_dir := ""
+var _tp := ""
+var _catalog: RefCounted
+
+
+func _run_e2e() -> void:
+	var repo := preload("res://scripts/level/level_repository.gd")
+	var gc_script := preload("res://scripts/app/game_controller.gd")
+	var gc: Node = gc_script.new()
+	root.add_child(gc)
+	var st: Dictionary = gc.start_level("res://assets/levels/level_01.json")
+	_check(st.ok, "E2E：首局启动", str(st))
+	var col := -1
+	for ci in 5:
+		if not gc.session.queue_columns[ci].is_empty():
+			col = ci
+			break
+	_check(col >= 0 and gc.place_front(col).ok, "E2E：中局占一槽（非空 slots+队列引用）", "")
+	var sv: Dictionary = gc.save_session()
+	_check(sv.ok, "E2E：中局落盘", str(sv))
+	var mid: Dictionary = repo.load_snapshot("level_01")
+	_check(mid.ok and mid.exists and mid.snapshot.get("outcome", "") == "RUNNING",
+		"E2E：读回中局存档", str(mid))
+	var k0 = mid.snapshot.get("turrets", {}).keys()[0]
+	_check(k0 is String, "E2E：磁盘 JSON turrets 键确为 String（复现条件成立）", str(typeof(k0)))
+	var gc2: Node = gc_script.new()
+	root.add_child(gc2)
+	var st2: Dictionary = gc2.start_level("res://assets/levels/level_01.json", mid.snapshot)
+	_check(st2.ok, "E2E：磁盘读回的中局存档可被 start_level 恢复（§9 字符串键修复）", str(st2))
+	if st2.ok:
+		_check(gc2.session.alive_voxel_ids.size() == gc.session.alive_voxel_ids.size()
+			and gc2.session.slots == gc.session.slots,
+			"E2E：恢复后 alive/槽位与原会话一致", "%d vs %d / %s vs %s" % [
+				gc2.session.alive_voxel_ids.size(), gc.session.alive_voxel_ids.size(),
+				str(gc2.session.slots), str(gc.session.slots)])
+	gc.stop_session()
+	gc2.stop_session()
+	gc.queue_free()
+	gc2.queue_free()
+	repo.delete_save("level_01")
+	DirAccess.remove_absolute(_tp)
+	DirAccess.remove_absolute(_test_dir)
 
 	if _failures == 0:
 		print("TEST_PASS test_persistence")

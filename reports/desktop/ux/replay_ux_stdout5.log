@@ -1,0 +1,767 @@
+WARNING: auto_fire retry turret=36 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=31 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=28 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=7 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=9 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=36 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=36 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=36 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=7 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=7 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=7 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=9 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=9 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=7 n=20 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=36 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=36 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=36 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=36 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=36 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=7 n=40 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=36 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=7 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=7 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=36 n=20 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=36 n=40 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=7 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=7 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=7 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=7 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=7 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=7 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=7 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=7 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=7 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=7 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=30 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=7 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=7 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=7 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=7 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=7 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=9 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=9 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=9 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=18 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=50 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=7 n=20 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=7 n=40 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=7 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=7 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=7 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=12 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=12 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=7 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=12 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=18 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=12 n=20 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=18 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=32 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=18 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=18 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=50 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=50 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=15 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=15 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=12 n=40 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=15 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=15 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=15 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=15 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=26 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=15 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=26 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=26 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=26 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=26 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=26 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=26 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=26 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=26 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=26 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=26 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=20 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=26 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=26 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=26 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=40 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=12 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=12 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=12 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=11 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=12 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=12 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=12 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=12 n=20 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=6 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=12 n=40 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=19 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=12 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=20 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=12 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=40 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=12 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=12 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=12 n=20 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=12 n=40 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=35 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=12 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=12 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=12 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=12 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=12 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=12 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=20 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=40 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=12 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=12 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=12 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=33 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=33 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=33 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=33 n=20 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=4 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=33 n=40 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=33 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=33 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=25 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=33 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=33 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=33 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=20 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=14 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=33 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=40 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=33 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=33 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=33 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=33 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=17 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=27 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=33 n=20 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=37 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=44 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=33 n=40 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=17 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=17 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=17 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=17 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=17 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=37 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=37 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=37 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=37 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=37 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=33 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=37 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=33 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=37 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=33 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=10 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=37 n=20 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=16 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=24 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=3 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=37 n=40 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=24 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=24 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=24 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=24 n=20 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=49 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=24 n=40 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=42 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=24 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=24 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=24 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=24 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=24 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=24 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=24 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=24 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=24 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=24 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=24 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=42 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=42 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=42 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=40 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=13 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=42 n=20 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=42 n=40 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=24 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=24 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=24 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=42 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=42 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=24 n=20 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=24 n=40 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=42 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=42 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=24 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=24 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=42 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=42 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=42 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=42 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=42 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=42 n=20 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=42 n=40 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=24 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=24 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=24 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=24 n=20 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=24 n=40 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=39 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=53 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=53 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=53 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=53 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=53 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=53 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=53 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=53 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=53 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=42 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=42 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=42 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=53 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=42 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=42 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=41 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=42 n=20 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=42 n=40 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=8 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=8 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=8 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=8 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=46 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=8 n=20 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=38 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=8 n=40 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=2 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=38 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=8 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=38 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=8 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=38 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=8 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=38 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=8 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=38 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=8 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=38 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=8 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=38 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=8 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=38 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=38 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=38 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=38 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=38 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=38 n=20 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=38 n=40 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=8 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=8 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=8 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=52 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=8 n=20 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=8 n=40 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=21 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=21 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=21 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=21 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=43 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=21 n=20 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=20 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=21 n=40 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=43 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=43 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=43 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=43 n=20 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=43 n=40 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=21 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=21 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=43 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=21 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+OpenGL API 4.1 INTEL-23.7.4 - Compatibility - Using Device: Intel Inc. - Intel(R) UHD Graphics 630
+
+[replay] 开始：{ "seed": 4.0, "slots": 3.0, "model": "res://assets/models/json/frog_02.json", "color_counts": { "1": 3167.0, "4": 311.0, "6": 218.0, "7": 30.0, "8": 299.0, "9": 80.0 }, "actions_total": 4175, "fire_ops": 4105, "drive_ops": 53, "add_slot_used": false }
+[replay] { "t_wall": 0.1, "t_eff": 0.1, "alive": 4105, "ops_done": 1, "fires": 0, "hits": 0, "cancels": 0, "dps_10s": 0.0 }
+[replay] { "t_wall": 5.1, "t_eff": 5.1, "alive": 4044, "ops_done": 5, "fires": 65, "hits": 61, "cancels": 0, "dps_10s": 11.84 }
+[replay] { "t_wall": 10.2, "t_eff": 10.2, "alive": 3892, "ops_done": 5, "fires": 224, "hits": 213, "cancels": 0, "dps_10s": 21.3 }
+[replay] { "t_wall": 15.2, "t_eff": 15.2, "alive": 3697, "ops_done": 8, "fires": 415, "hits": 408, "cancels": 0, "dps_10s": 34.7 }
+[replay] { "t_wall": 20.2, "t_eff": 20.2, "alive": 3496, "ops_done": 10, "fires": 616, "hits": 609, "cancels": 0, "dps_10s": 39.4 }
+[replay] { "t_wall": 25.2, "t_eff": 25.2, "alive": 3323, "ops_done": 13, "fires": 789, "hits": 782, "cancels": 0, "dps_10s": 37.4 }
+[replay] { "t_wall": 30.2, "t_eff": 30.2, "alive": 3154, "ops_done": 14, "fires": 961, "hits": 951, "cancels": 0, "dps_10s": 34.3 }
+[replay] { "t_wall": 35.2, "t_eff": 35.2, "alive": 3034, "ops_done": 16, "fires": 1078, "hits": 1071, "cancels": 0, "dps_10s": 28.8 }
+[replay] { "t_wall": 40.3, "t_eff": 40.3, "alive": 2956, "ops_done": 16, "fires": 1154, "hits": 1149, "cancels": 0, "dps_10s": 19.5 }
+[replay] { "t_wall": 45.3, "t_eff": 45.3, "alive": 2918, "ops_done": 17, "fires": 1192, "hits": 1187, "cancels": 0, "dps_10s": 11.5 }
+[replay] { "t_wall": 50.3, "t_eff": 50.3, "alive": 2882, "ops_done": 17, "fires": 1229, "hits": 1223, "cancels": 0, "dps_10s": 7.4 }
+[replay] { "t_wall": 55.3, "t_eff": 55.3, "alive": 2788, "ops_done": 19, "fires": 1324, "hits": 1317, "cancels": 0, "dps_10s": 13.0 }
+[replay] { "t_wall": 60.3, "t_eff": 60.3, "alive": 2608, "ops_done": 20, "fires": 1502, "hits": 1497, "cancels": 0, "dps_10s": 27.3 }
+[replay] { "t_wall": 65.3, "t_eff": 65.3, "alive": 2442, "ops_done": 24, "fires": 1672, "hits": 1663, "cancels": 0, "dps_10s": 34.6 }
+[replay] { "t_wall": 70.3, "t_eff": 70.3, "alive": 2229, "ops_done": 25, "fires": 1886, "hits": 1876, "cancels": 0, "dps_10s": 37.9 }
+[replay] { "t_wall": 75.4, "t_eff": 75.4, "alive": 2051, "ops_done": 28, "fires": 2060, "hits": 2054, "cancels": 0, "dps_10s": 39.0 }
+[replay] { "t_wall": 80.4, "t_eff": 80.4, "alive": 1899, "ops_done": 32, "fires": 2212, "hits": 2206, "cancels": 0, "dps_10s": 32.8 }
+[replay] { "t_wall": 85.4, "t_eff": 85.4, "alive": 1821, "ops_done": 32, "fires": 2284, "hits": 2284, "cancels": 0, "dps_10s": 22.9 }
+[replay] { "t_wall": 90.4, "t_eff": 90.4, "alive": 1780, "ops_done": 32, "fires": 2327, "hits": 2325, "cancels": 0, "dps_10s": 11.8 }
+[replay] { "t_wall": 95.4, "t_eff": 95.4, "alive": 1759, "ops_done": 32, "fires": 2348, "hits": 2346, "cancels": 0, "dps_10s": 6.2 }
+[replay] { "t_wall": 100.4, "t_eff": 100.4, "alive": 1668, "ops_done": 34, "fires": 2441, "hits": 2437, "cancels": 0, "dps_10s": 11.2 }
+[replay] { "t_wall": 105.4, "t_eff": 105.4, "alive": 1486, "ops_done": 35, "fires": 2622, "hits": 2619, "cancels": 0, "dps_10s": 27.3 }
+[replay] { "t_wall": 110.4, "t_eff": 110.4, "alive": 1375, "ops_done": 38, "fires": 2735, "hits": 2730, "cancels": 0, "dps_10s": 29.3 }
+[replay] { "t_wall": 115.5, "t_eff": 115.5, "alive": 1274, "ops_done": 39, "fires": 2837, "hits": 2831, "cancels": 0, "dps_10s": 21.2 }
+[replay] { "t_wall": 120.5, "t_eff": 120.5, "alive": 1180, "ops_done": 40, "fires": 2933, "hits": 2925, "cancels": 0, "dps_10s": 19.5 }
+[replay] { "t_wall": 125.5, "t_eff": 125.5, "alive": 1054, "ops_done": 42, "fires": 3055, "hits": 3051, "cancels": 0, "dps_10s": 22.2 }
+[replay] { "t_wall": 130.5, "t_eff": 130.5, "alive": 957, "ops_done": 43, "fires": 3155, "hits": 3148, "cancels": 0, "dps_10s": 22.3 }
+[replay] { "t_wall": 135.5, "t_eff": 135.5, "alive":WARNING: auto_fire retry turret=21 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=21 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=21 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=1 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=21 n=20 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=34 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=5 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=21 n=40 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=5 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=5 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=5 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=5 n=20 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=47 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=5 n=40 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=23 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=22 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=47 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=47 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=47 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=47 n=20 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=47 n=40 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=45 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=45 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=45 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=51 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=48 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=45 n=20 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=29 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=45 n=40 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=47 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=47 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=47 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=47 n=20 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=47 n=40 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=45 n=1 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=45 n=2 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=45 n=3 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=45 n=20 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: auto_fire retry turret=45 n=40 reason=origin_ray_miss
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+ 839, "ops_done": 43, "fires": 3272, "hits": 3266, "cancels": 0, "dps_10s": 21.5 }
+[replay] { "t_wall": 140.5, "t_eff": 140.5, "alive": 724, "ops_done": 46, "fires": 3386, "hits": 3381, "cancels": 0, "dps_10s": 23.2 }
+[replay] { "t_wall": 145.5, "t_eff": 145.5, "alive": 595, "ops_done": 48, "fires": 3517, "hits": 3510, "cancels": 0, "dps_10s": 24.3 }
+[replay] { "t_wall": 150.5, "t_eff": 150.5, "alive": 424, "ops_done": 49, "fires": 3694, "hits": 3681, "cancels": 0, "dps_10s": 30.0 }
+[replay] { "t_wall": 155.5, "t_eff": 155.5, "alive": 257, "ops_done": 53, "fires": 3857, "hits": 3848, "cancels": 0, "dps_10s": 33.8 }
+[replay] { "t_wall": 160.5, "t_eff": 160.6, "alive": 71, "ops_done": 53, "fires": 4040, "hits": 4034, "cancels": 0, "dps_10s": 35.1 }
+[replay] { "t_wall": 165.5, "t_eff": 165.6, "alive": 14, "ops_done": 53, "fires": 4091, "hits": 4091, "cancels": 0, "dps_10s": 24.3 }
+[replay] 结束 result=WON eff=169.9s wall=169.9s report=/Users/zhaojian/code/godot-voxel-block-smash/reports/desktop/ux/replay_ux_report5.json

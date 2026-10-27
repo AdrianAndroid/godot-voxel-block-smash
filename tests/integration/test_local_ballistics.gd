@@ -29,15 +29,15 @@ func _aim_for(gc: Node) -> Callable:
 
 
 # 变换序列：每步一种，覆盖 ±90°/180° 横转、俯仰、平移（平移不动 basis 不算姿态写）
+# 2026-10-27 P1：姿态唯一来源是控制器 yaw/pitch 状态（step 顶部按状态重建 Basis），
+# 测试姿态变化必须走 set_view_pose（生产写入口），直写 Basis 会被下一步覆盖。
 func _apply_pose(gc: Node, k: int) -> void:
-	var b := Basis.IDENTITY
 	match k % 5:
-		0: b = Basis(Vector3.UP, PI / 2)
-		1: b = Basis(Vector3.UP, -PI / 2)
-		2: b = Basis(Vector3.UP, PI)
-		3: b = Basis(Vector3.RIGHT, 0.5) * Basis(Vector3.UP, 0.8)
-		4: b = Basis(Vector3.UP, 0.3)
-	gc.voxel_model.set_orientation(b)
+		0: gc.set_view_pose(PI / 2, 0.0)
+		1: gc.set_view_pose(-PI / 2, 0.0)
+		2: gc.set_view_pose(PI, 0.0)
+		3: gc.set_view_pose(0.8, 0.5)   # 横转+俯仰组合（±60° 限位内）
+		4: gc.set_view_pose(0.3, 0.0)
 	if k % 5 == 4:
 		var t: Transform3D = gc.voxel_model.global_transform
 		t.origin = Vector3(2.0, 0.5, -1.5)  # 纯平移：世界锚点移动，局部弹道不受影响
@@ -81,7 +81,7 @@ func _run() -> void:
 			var tr: Transform3D = gc.voxel_model.global_transform
 			tr.origin = Vector3.ZERO
 			gc.voxel_model.global_transform = tr
-			gc.voxel_model.set_orientation(Basis.IDENTITY)
+			gc.set_view_pose(0.0, 0.0)  # P1：回正姿态走控制器唯一写入口
 			var fr: Dictionary = gc.try_auto_fire(0)  # 参数为槽位索引
 			if not fr.ok:
 				gc.step(1.0 / 60.0)

@@ -14,20 +14,18 @@ func _initialize() -> void:
 	_check(router.handle_drag(1, Vector2(50, 0)) == Vector2.ZERO, "UI 拖动零旋转", "")
 	router.handle_release(1)
 
-	# 模型空白区旋转：0.01 弧度/像素
+	# 模型空白区旋转：原始像素位移透传（P1：灵敏度换算在 main，角度状态在控制器）
 	_check(router.handle_press(2, false), "模型区起始成为旋转指针", "")
 	var rot: Vector2 = router.handle_drag(2, Vector2(100, 50))
-	_check(rot == Vector2(1.0, 0.5), "灵敏度 0.01rad/px", str(rot))
-	_check(router.current_angles() == Vector2(1.0, 0.5), "角度累积", str(router.current_angles()))
+	_check(rot == Vector2(100, 50), "原始像素位移透传", str(rot))
 
 	# 多指只认首指
 	_check(not router.handle_press(3, false), "第二指忽略", "")
 	_check(router.handle_drag(3, Vector2(100, 0)) == Vector2.ZERO, "第二指拖动零旋转", "")
 
-	# 俯仰钳制（CQ-20261026/S02：±70°=1.2217rad）
-	for i in 100:
-		router.handle_drag(2, Vector2(0, 100))
-	_check(router.current_angles().y <= 1.2217, "俯仰钳制≤70°", str(router.current_angles()))
+	# 释放后旧指针不再产生位移
+	router.handle_release(2)
+	_check(router.handle_drag(2, Vector2(0, 100)) == Vector2.ZERO, "释放后拖动零旋转", "")
 
 	# 失焦清理后旧指针无效
 	router.cancel_all()

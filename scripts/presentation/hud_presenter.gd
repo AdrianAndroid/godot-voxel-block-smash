@@ -50,6 +50,11 @@ var _debug_button: Button = null   # CQ/S07：守恒调试面板开关（仅 deb
 var _debug_panel: Label = null
 var _top_bar: HBoxContainer = null    # iOS 适配：安全区内移需要引用
 var _props_row: HBoxContainer = null
+# 2026-10-27 P2/P3：上位过渡层（完整炮台从列首飞到槽位，不被队列裁切）与退场驱动
+var _transition_layer: Control = null
+var _transitions: Dictionary = {}  # tid -> {view: CannonView, from: Rect2, slot: int, col: int}
+var _col_tweens: Array = [null, null, null, null, null]  # 补位 Tween 以列为单位管理（防争写 _col_shift）
+var _pending_outcome := ""         # RETIRING 未播完时延后显示的结算（P3：先看退场再弹胜利遮罩）
 
 const COLUMN_WINDOW := 3           # 每列可见窗口（S07：至少展示前三门）
 const SCROLL_THRESHOLD_PX := 12.0  # 点击/滚动移动阈值（S07 §6）
@@ -84,6 +89,8 @@ func _apply_safe_area() -> void:
 
 func bind(p_controller: Node) -> void:
 	controller = p_controller
+	clear_transitions()  # P2/P3：换局/重开清空过渡层与退场驱动（旧回调不得污染新关卡）
+	_pending_outcome = ""
 	_return_mode = false
 	for c in 5:
 		_col_offset[c] = 0
@@ -103,6 +110,10 @@ func bind(p_controller: Node) -> void:
 			controller.session.level_id)
 	# 发射反馈（后坐+炮口闪光，仅成功发射后触发）
 	controller.bus.subscribe("turret_fire", _on_fire_feedback, controller.session.level_id)
+	# P2：到位事件——结束对应上位过渡（落位反馈+刷新），_process 中有兜底（事件丢失也收敛）
+	controller.bus.subscribe("turret_ready", _on_turret_ready, controller.session.level_id)
+	# P3：退场完成——若胜利遮罩在等退场，此时放行；_process 有界兜底
+	controller.bus.subscribe("retire_finished", _on_retire_finished, controller.session.level_id)
 	# 连击专属订阅：不被 refresh 清掉
 	controller.bus.subscribe("combo_update", _on_combo_update, controller.session.level_id)
 	controller.bus.subscribe("level_win", _on_outcome.bind("WON"), controller.session.level_id)
@@ -269,6 +280,13 @@ func _build_ui() -> void:
 	_merge_button.toggled.connect(_on_merge_toggled)
 	props_row.add_child(_merge_button)
 
+	# 2026-10-27 P2：上位过渡层——在队列/槽位之上、结算/暂停遮罩之下；
+	# 完整移动炮台绘制于此（不受队列 ColumnClip 裁切），不拦截输入
+	_transition_layer = Control.new()
+	_transition_layer.set_anchors_preset(PRESET_FULL_RECT)
+	_transition_layer.mouse_filter = MOUSE_FILTER_IGNORE
+	add_child(_transition_layer)
+
 	# 结算全屏遮罩：阻断底层输入，重开/返回按钮
 	_result_overlay = ColorRect.new()
 	_result_overlay.set_anchors_preset(PRESET_FULL_RECT)
@@ -381,17 +399,32 @@ func refresh() -> void:
 		if tid < 0:
 			cv.set_visual_state("empty")
 			cv.disabled = true  # 空槽不可点（上位走列首）
+			_reset_slot_fx(cv)  # P3：退场缩放的槽位复用前还原
 			continue
-		cv.disabled = false
 		var t: Dictionary = s.turrets.get(tid, {})
+		var st := str(t.get("state", ""))
+		# P2：LOADING 中槽位只显示底座落点提示、禁用点击（完整炮在过渡层飞行）
+		if st == "LOADING":
+			cv.set_visual_state("loading")
+			cv.disabled = true
+			continue
 		cv.set_cannon(_color_of(int(t.get("color_id", 0))), int(t.get("ammo_remaining", 0)))
-		# CQ §2.2 状态映射：归零结算中 / 待取回 / 等待目标 / 正常
-		if int(t.get("ammo_remaining", 0)) <= 0 or t.get("state", "") == "DRAINING":
+		# CQ §2.2 状态映射：退场中 / 归零结算中 / 待取回 / 等待目标 / 正常
+		if st == "RETIRING":
+			cv.set_visual_state("retiring")
+			cv.disabled = true  # 等待释放时点击反馈明确（toast 由命令拒绝路径给出）
+		elif int(t.get("ammo_remaining", 0)) <= 0 or st == "DRAINING":
 			cv.set_visual_state("draining")
-		elif t.get("state", "") == "RETURN_PENDING" or t.get("state", "") == "WAITING_TARGET":
+			cv.disabled = false
+			_reset_slot_fx(cv)
+		elif st == "RETURN_PENDING" or st == "WAITING_TARGET":
 			cv.set_visual_state("waiting")
+			cv.disabled = false
+			_reset_slot_fx(cv)
 		else:
 			cv.set_visual_state("front")
+			cv.disabled = false
+			_reset_slot_fx(cv)
 	for prop in _prop_buttons:
 		var count := int(s.prop_counts.get(prop, 0))
 		var b: Button = _prop_buttons[prop]
@@ -400,6 +433,15 @@ func refresh() -> void:
 		b.text = "%s×%d%s" % [PROP_LABELS[prop], count, " 待发" if pending else ""]
 		b.visible = count > 0 or pending
 	PerfProbe.add("hud_refresh", _pt)
+
+
+# P3：退场动画把槽位缩放/淡出；槽位复用或状态非 RETIRING 时必须还原
+#（place_feedback 的弹跳 scale 恒 ≥1.0，此处只清收缩残留，不打断弹跳）
+func _reset_slot_fx(cv: CannonView) -> void:
+	if cv.scale.x < 0.99:
+		cv.scale = Vector2.ONE
+	if cv.modulate.a < 0.99:
+		cv.modulate.a = 1.0
 
 
 # CQ/S07：列刷新 = 3 门可见窗口映射（视图复用池，不为整列建节点）；
@@ -555,7 +597,7 @@ func slot_muzzle_screen_center(index: int) -> Vector2:
 	if index < 0 or index >= _slot_views.size():
 		return Vector2(-1, -1)
 	var cv := _slot_views[index]
-	if cv.state in ["empty", "locked"]:
+	if cv.state in ["empty", "locked", "loading"]:
 		return FireGeom.slot_screen_center(index, size)
 	return cv.muzzle_screen_center()
 
@@ -572,6 +614,13 @@ func _process(_delta: float) -> void:
 	if _refresh_dirty:
 		_refresh_dirty = false
 		refresh()
+	_tick_transitions()      # P2：上位过渡逐帧驱动（控制器模拟时钟为权威进度）
+	_tick_retire_visuals()   # P3：RETIRING 槽位收缩淡出（同上）
+	# P3 兜底：retire_finished 事件若错过，retiring_active() 翻false 后一帧内放行结算遮罩
+	if _pending_outcome != "" and controller != null and controller.session != null \
+			and not controller.retiring_active():
+		_show_outcome(_pending_outcome)
+		_pending_outcome = ""
 	# CQ/S08 §5：5 秒无进展提示（暂停/非 RUNNING 不计时，有进展即清零）
 	if controller != null and controller.session != null and visible \
 			and controller.session.outcome == "RUNNING" and not controller._paused:
@@ -587,7 +636,7 @@ func _process(_delta: float) -> void:
 	var center_world: Vector3 = wfg * controller.ball_physics.system.boundary_center
 	for i in _slot_views.size():
 		var cv := _slot_views[i]
-		if cv.state in ["empty", "locked"]:
+		if cv.state in ["empty", "locked", "loading"]:  # P2：上位中无炮管可瞄准
 			continue
 		var tid: int = int(s.slots[i]) if i < s.slots.size() else -1
 		if tid < 0:
@@ -598,7 +647,11 @@ func _process(_delta: float) -> void:
 		if not ticket.is_empty():
 			var vid := int(ticket.target_voxel_id)
 			if controller.voxel_manager.is_alive(vid):
-				target_world = wfg * (controller.voxel_manager.data.positions[vid] + Vector3(0.5, 0.5, 0.5))
+				# P4 §6.2：炮管瞄准与弹道同一 aim_grid_point（暴露面多点确认的瞄点），
+				# 不换回体素中心——玩家看到的炮口指向就是真实弹道指向
+				var gp: Vector3 = ticket.get("aim_grid_point",
+					controller.voxel_manager.data.positions[vid] + Vector3(0.5, 0.5, 0.5))
+				target_world = wfg * gp
 		var screen := camera.unproject_position(target_world)
 		cv.set_aim_dir(screen - cv.get_global_rect().get_center())
 
@@ -621,6 +674,24 @@ func _on_resume_pressed() -> void:
 # main 退后台恢复时避免冲掉用户手动暂停
 func is_pause_overlay_visible() -> bool:
 	return _pause_overlay != null and _pause_overlay.visible
+
+
+# P3：RETIRING 槽位逐帧收缩淡出（0.20s → ~0.15 倍、透明度→0）；进度权威是控制器模拟时钟
+func _tick_retire_visuals() -> void:
+	if controller == null or controller.session == null:
+		return
+	var s: RefCounted = controller.session
+	for i in mini(_slot_views.size(), s.slots.size()):
+		var tid := int(s.slots[i])
+		if tid < 0:
+			continue
+		var p: float = controller.retire_progress(tid)
+		if p < 0.0:
+			continue
+		var cv := _slot_views[i]
+		cv.pivot_offset = cv.size * 0.5
+		cv.scale = Vector2.ONE * lerpf(1.0, 0.15, p)
+		cv.modulate.a = 1.0 - p
 
 
 func _on_fire_feedback(args: Array, _m: Dictionary) -> void:
@@ -647,52 +718,122 @@ func show_action_result(text: String) -> void:
 # CQ §2.1：只有列首可点击上位；点击列即把列首送入最左空闲炮位（一键上位）。
 # CQ/S07 §4：数据事务先完成（place_front 原子提交），动画纯表现——即使被 refresh 重建
 # 打断，业务状态也已正确推进，动画不是唯一推进入口。
+# 2026-10-27 P2（方案 §4.2.5）：同列上位动画期间阻止该列二次点击并明确提示（不吞点击）；
+# 其他列可并行。
 func _on_column_pressed(c: int) -> void:
 	if controller == null or controller.session == null:
 		return
+	if _column_loading(c):
+		show_action_result("上位中…")
+		return
+	# 过渡起点必须在 refresh 前捕获（数据已出列，但池视图矩形仍是旧行位）
+	var from_rect: Rect2 = (_column_pools[c][0] as Control).get_global_rect()
 	var res: Dictionary = controller.place_front(c)
 	if not res.get("ok", false):
 		var reason := str(res.get("reason", ""))
 		show_action_result("炮位已满" if reason == "slots_full" else "无法上位：%s" % reason)
 	else:
-		_play_place_animation(c, int(res.get("slot", -1)), int(res.get("turret_id", -1)))
+		_begin_place_transition(c, int(res.get("slot", -1)), int(res.get("turret_id", -1)), from_rect)
 	refresh()
 
 
-# 上位表现：列首残影飞向槽位 + 槽位落位弹跳 + 队列整体上移（全部纯表现，可被打断）
-func _play_place_animation(c: int, slot: int, tid: int) -> void:
-	if c < 0 or c >= _column_pools.size() or slot < 0 or slot >= _slot_views.size():
+func _column_loading(c: int) -> bool:
+	for tid in _transitions:
+		if int((_transitions[tid] as Dictionary).get("col", -1)) == c:
+			return true
+	return false
+
+
+# P2 上位过渡：完整炮台（底座+炮身+炮管+数字+颜色）从列首矩形平滑飞向目标槽位矩形。
+# 进度由控制器模拟时钟驱动（loading_progress），本层只表现——Tween 回调不是业务推进入口，
+# 窗口隐藏/动画被打断/headless 都不会卡在 LOADING（控制器 _tick_transitions 到点转 READY）。
+func _begin_place_transition(c: int, slot: int, tid: int, from_rect: Rect2) -> void:
+	if c < 0 or c >= _column_pools.size() or slot < 0 or slot >= _slot_views.size() or tid < 0:
 		return
-	# 1) 残影飞行动画
-	var from_rect: Rect2 = (_column_pools[c][0] as Control).get_global_rect()
-	var to_rect: Rect2 = _slot_views[slot].get_global_rect()
-	var side: float = minf(from_rect.size.x, from_rect.size.y)
-	var ghost := TextureRect.new()
-	ghost.texture = CannonView.TEX_BODY
-	ghost.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	ghost.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	if _transitions.has(tid):
+		return  # 重复归属防御：一门炮同时最多一条过渡
+	var fly := CannonView.new()
+	fly.mouse_filter = MOUSE_FILTER_IGNORE
 	var t: Dictionary = controller.session.turrets.get(tid, {})
-	ghost.modulate = _color_of(int(t.get("color_id", 0)))
-	ghost.mouse_filter = MOUSE_FILTER_IGNORE
-	ghost.size = Vector2(side, side)
-	ghost.global_position = from_rect.get_center() - ghost.size * 0.5
-	add_child(ghost)
-	var tw := create_tween()
-	tw.tween_property(ghost, "global_position",
-		to_rect.get_center() - ghost.size * 0.5, 0.18)\
-		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tw.parallel().tween_property(ghost, "modulate:a", 0.3, 0.18)
-	tw.tween_callback(ghost.queue_free)
-	# 2) 槽位落位弹跳
-	_slot_views[slot].place_feedback()
-	# 3) 队列整体上移一行（映射已按新数据刷新，内容从低一行滑回）
+	fly.set_cannon(_color_of(int(t.get("color_id", 0))), int(t.get("ammo_remaining", 0)))
+	fly.set_visual_state("front")
+	_transition_layer.add_child(fly)
+	fly.position = from_rect.position
+	fly.size = from_rect.size
+	_transitions[tid] = {"view": fly, "from": from_rect, "slot": slot, "col": c}
+	# 队列整体上移一行（映射已按新数据刷新，内容从低一行滑回）；补位 Tween 以列为单位管理
 	var row_h := _row_height(c)
 	if row_h > 1.0:
+		if _col_tweens[c] != null and (_col_tweens[c] as Tween).is_valid():
+			(_col_tweens[c] as Tween).kill()
 		_col_shift[c] = row_h
 		var stw := create_tween()
+		_col_tweens[c] = stw
 		stw.tween_method(func(v: float) -> void:
 			_col_shift[c] = v
 			_layout_column(c), row_h, 0.0, 0.15)
+
+
+# 过渡帧驱动：位置/尺寸从源矩形插值到目标矩形（目标矩形逐帧重算——窗口缩放保持进度）；
+# 进度来自控制器模拟时钟。落地：移除过渡对象 → 刷新 → 落位弹跳（视觉接棒后才开火，
+# 因为控制器同一时刻才把 LOADING 转 READY 并注册调度）。
+func _tick_transitions() -> void:
+	if controller == null or controller.session == null:
+		return
+	var done: Array = []
+	for tid in _transitions:
+		var tr: Dictionary = _transitions[tid]
+		var p: float = controller.loading_progress(int(tid))
+		if p < 0.0:
+			done.append(int(tid))  # 已 READY/被清理（含事件丢失兜底）
+			continue
+		var slot := int(tr.slot)
+		if slot < 0 or slot >= _slot_views.size():
+			done.append(int(tid))
+			continue
+		var target: Rect2 = _slot_views[slot].get_global_rect()
+		var e := 1.0 - (1.0 - p) * (1.0 - p)  # ease-out quad
+		var fly: CannonView = tr.view
+		fly.position = (tr.from as Rect2).position.lerp(target.position, e)
+		fly.size = (tr.from as Rect2).size.lerp(target.size, e)
+	for tid in done:
+		_finish_place_transition(tid)
+
+
+func _finish_place_transition(tid: int) -> void:
+	if not _transitions.has(tid):
+		return  # turret_ready 事件与 _process 兜底可能双到，幂等
+	var tr: Dictionary = _transitions[tid]
+	_transitions.erase(tid)
+	(tr.view as CannonView).queue_free()
+	var slot := int(tr.slot)
+	refresh()
+	if slot >= 0 and slot < _slot_views.size() \
+			and controller != null and controller.session != null \
+			and int(controller.session.slots[slot]) == tid:
+		_slot_views[slot].place_feedback()  # 到位才弹跳（旧实现按下即弹，时机错误）
+
+
+func _on_turret_ready(args: Array, _m: Dictionary) -> void:
+	_finish_place_transition(int(args[0]))
+
+
+func _on_retire_finished(_args: Array, _m: Dictionary) -> void:
+	# P3：胜利遮罩等待退场完成（retire_finished 逐个到，全完才放行）
+	if _pending_outcome != "" and controller != null and not controller.retiring_active():
+		_show_outcome(_pending_outcome)
+		_pending_outcome = ""
+
+
+# 换局/重开/返回：清理过渡层（旧炮台视图与回调不污染新会话）
+func clear_transitions() -> void:
+	for tid in _transitions:
+		((_transitions[tid] as Dictionary).view as CannonView).queue_free()
+	_transitions.clear()
+	for c in 5:
+		if _col_tweens[c] != null and (_col_tweens[c] as Tween).is_valid():
+			(_col_tweens[c] as Tween).kill()
+		_col_tweens[c] = null
 
 
 func _on_slot_pressed(i: int) -> void:
@@ -795,6 +936,15 @@ func _on_combo_update(args: Array, _m: Dictionary) -> void:
 
 func _on_outcome(_a: Array, _m: Dictionary, outcome: String) -> void:
 	refresh()
+	# P3（方案 §5）：胜利时若有 RETIRING 退场在播，先播完再显示遮罩（retire_finished
+	# 或 _process 兜底放行）；ERROR/LOST 立即显示
+	if outcome == "WON" and controller != null and controller.retiring_active():
+		_pending_outcome = outcome
+		return
+	_show_outcome(outcome)
+
+
+func _show_outcome(outcome: String) -> void:
 	match outcome:
 		"WON":
 			_result_title.text = "通关！"

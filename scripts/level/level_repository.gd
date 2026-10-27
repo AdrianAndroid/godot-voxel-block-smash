@@ -52,12 +52,19 @@ static func load_snapshot(level_id: String) -> Dictionary:
 
 
 # CQ-20261026/S09：v1 旧档备份（重命名 .v1.bak），由调用方决定重新开始
+# 2026-10-27 §9：返回值必须反映真实结果——rename 失败时原档仍在，返回空串并告警，
+# 调用方据此决定（失败时不得把原档当作已备份丢弃/覆盖处理）。
 static func backup_save(level_id: String) -> String:
 	var p := save_path(level_id)
 	if not FileAccess.file_exists(p):
 		return ""
 	var bak := p + ".v1.bak"
-	DirAccess.rename_absolute(p, bak)
+	if FileAccess.file_exists(bak):
+		DirAccess.remove_absolute(bak)  # 旧备份可弃：本次要备份的是当前坏档
+	var err := DirAccess.rename_absolute(p, bak)
+	if err != OK:
+		push_warning("[LevelRepository] 备份失败 err=%d（保留原档）: %s" % [err, p])
+		return ""
 	return bak
 
 
