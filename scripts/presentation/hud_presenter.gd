@@ -48,6 +48,8 @@ var _refresh_dirty := false        # FM/F4：事件驱动的刷新按帧合并�
 var _toast_token := 0
 var _debug_button: Button = null   # CQ/S07：守恒调试面板开关（仅 debug 构建）
 var _debug_panel: Label = null
+var _top_bar: HBoxContainer = null    # iOS 适配：安全区内移需要引用
+var _props_row: HBoxContainer = null
 
 const COLUMN_WINDOW := 3           # 每列可见窗口（S07：至少展示前三门）
 const SCROLL_THRESHOLD_PX := 12.0  # 点击/滚动移动阈值（S07 §6）
@@ -56,9 +58,28 @@ const SCROLL_THRESHOLD_PX := 12.0  # 点击/滚动移动阈值（S07 §6）
 func _ready() -> void:
 	set_anchors_preset(PRESET_FULL_RECT)
 	size = get_viewport_rect().size  # CanvasLayer 父级不提供 Control 尺寸，显式取视口
-	get_viewport().size_changed.connect(func() -> void: size = get_viewport_rect().size)
+	get_viewport().size_changed.connect(func() -> void:
+		size = get_viewport_rect().size
+		_apply_safe_area())
 	mouse_filter = MOUSE_FILTER_IGNORE
 	_build_ui()
+	_apply_safe_area()
+
+
+# iOS 适配：刘海/灵动岛/Home 指示条安全区内移。桌面窗口坐标与屏幕坐标不重合（有窗口位移），
+# 且桌面无裁剪需求，故仅 iOS 启用；DisplayServer.get_display_safe_area() 为屏幕像素，
+# 经 canvas_transform 逆变换到 1080×2400 画布坐标后调节顶栏/道具行（其余分区在屏幕中段，不受影响）。
+func _apply_safe_area() -> void:
+	if not OS.has_feature("ios") or _top_bar == null or _props_row == null:
+		return
+	var safe: Rect2i = DisplayServer.get_display_safe_area()
+	if safe.size.x <= 0 or safe.size.y <= 0:
+		return
+	var inv: Transform2D = get_viewport().get_canvas_transform().affine_inverse()
+	var top_canvas: float = (inv * Vector2(0, safe.position.y)).y
+	var bottom_canvas: float = (inv * Vector2(0, safe.position.y + safe.size.y)).y
+	_top_bar.offset_top = 12.0 + maxf(top_canvas, 0.0)
+	_props_row.offset_bottom = -maxf(get_viewport_rect().size.y - bottom_canvas, 0.0)
 
 
 func bind(p_controller: Node) -> void:
@@ -114,6 +135,7 @@ func _build_ui() -> void:
 	top.offset_left = 16
 	top.offset_right = -16
 	add_child(top)
+	_top_bar = top
 	_level_label = Label.new()
 	_level_label.add_theme_font_size_override("font_size", 36)
 	top.add_child(_level_label)
@@ -128,14 +150,15 @@ func _build_ui() -> void:
 	_remain_label.add_theme_font_size_override("font_size", 36)
 	top.add_child(_remain_label)
 	# FM/F4：运行中暂停按钮（继续/重开/返回，走控制器 _paused 门）
+	# iOS 适配：124×124 逻辑像素 ≈ 44×44pt（iPhone 15 Pro 档 keep 缩放），触控目标参考值
 	var pause_btn := _make_button("暂停", Color(0.25, 0.28, 0.35))
-	pause_btn.custom_minimum_size = Vector2(120, 60)
+	pause_btn.custom_minimum_size = Vector2(124, 124)
 	pause_btn.pressed.connect(_on_pause_pressed)
 	top.add_child(pause_btn)
 	# CQ/S07 §5：守恒调试面板（仅 debug 构建，正式 HUD 不堆实现细节）
 	if OS.is_debug_build():
 		_debug_button = _make_button("守恒", Color(0.2, 0.2, 0.25))
-		_debug_button.custom_minimum_size = Vector2(120, 60)
+		_debug_button.custom_minimum_size = Vector2(124, 124)
 		_debug_button.pressed.connect(_toggle_debug_panel)
 		top.add_child(_debug_button)
 		_debug_panel = Label.new()
@@ -224,6 +247,7 @@ func _build_ui() -> void:
 	props_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	props_row.add_theme_constant_override("separation", 8)
 	add_child(props_row)
+	_props_row = props_row
 	for prop in ["speed_x2", "add_slot", "designated_target", "shuffle"]:
 		var b := _make_button(PROP_LABELS[prop], Color(0.25, 0.25, 0.3))
 		b.custom_minimum_size = Vector2(190, 0)

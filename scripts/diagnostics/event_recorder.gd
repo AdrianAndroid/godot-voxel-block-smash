@@ -3,7 +3,7 @@ extends RefCounted
 # 结构化事件记录器（架构 v6：JSONL；run/build/gdd 标识；可开关与采样；发布构建关闭高频日志）
 # 阶段：阶段3
 
-var enabled := true
+var enabled := OS.is_debug_build()  # iOS 适配：发布构建默认关（每事件 flush 高频写盘仅限 debug/编辑器）
 var sample_every := 1           # 高频事件采样率（1=全量）
 var path := "user://event_log.jsonl"
 var run_id := ""
@@ -17,6 +17,8 @@ const SAMPLED_EVENTS := ["ball_hit_voxel"]  # 高频事件采样写
 
 
 func open(p_path: String = "") -> void:
+	if not enabled:
+		return  # 发布构建不落盘、不建文件
 	if p_path != "":
 		path = p_path
 	run_id = "%d" % Time.get_unix_time_from_system()

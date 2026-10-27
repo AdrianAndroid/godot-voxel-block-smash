@@ -468,3 +468,17 @@ FM14 性能（run-4 perf_log + run-5 RSS）：FPS min53.4/avg75.4；p95 max29.8m
 测试：全套件 19/19 PASS（桌面 headless）；真机目检：窗口 540×1228（含标题栏）、槽位行 3 占用+2 空、无"锁"、道具行无"加槽"、存档正常恢复续玩。
 未解决问题与修复计划：无。replay_runner 开局的 use_prop("add_slot") 现在会返回失败并记录在报告 meta（无害，5 槽开局节奏只会更好）。
 下一步：等用户实玩确认（此前 FM 人工项：UI 实玩计时/后台重开/合成指定滚动）后提交 git。
+
+## iOS 适配准备（2026-10-27，zhaojian/forios）
+任务：docs/tasks/ios-adaptation-plan.md（源码检查+平台适配+构建准备；不开模拟器、不长时间运行）。
+基线：eab2e64 干净；Godot 4.7.2 stable / GL Compatibility / 无原生插件；Xcode 26.3 + iOS SDK 26.2；签名身份 Apple Development 存在；缺 iOS 导出模板（ios.zip）。
+本轮修改文件与作用：
+- export_presets.cfg：新增 [preset.2] iOS（arm64、bundle 沿用 com.learning.godotvoxelblocksmash、0.3.2(5)、iPhone 竖屏、min_ios 15.0、export_project_only、图标 1024 链、零权限、排除 tests/tools/docs/reports/builds/*.vox；签名字段留空不虚构）。
+- assets/textures/app_icon_1024.png（新）：432 源图放大，供 icon_1024x1024。
+- scripts/app/main.gd：iOS 门内 Input.emulate_mouse_from_touch=false（实证缺陷：默认设置一次触摸双派发 mouse+touch，旋转×2、点按双触发；探针 /tmp/ios-adapt/test_touch_emulation.gd）。
+- scripts/presentation/hud_presenter.gd：_apply_safe_area()（仅 iOS，DisplayServer 安全区→canvas 坐标，顶栏/道具行内移，size_changed 重算）；暂停/守恒按钮 120×60→124×124（≈44pt）。
+- scripts/diagnostics/event_recorder.gd + perf_monitor.gd：enabled 默认 OS.is_debug_build()（release 不再高频写 user://；debug/编辑器不变）。
+实际命令与结果：`godot --headless --import` exit=0（80 项缓存）；19/19 套件 TEST_PASS；lifecycle_check 30 轮 TEST_PASS；`--export-release "iOS"` 5.7s 内失败于唯一原因"未找到 ios.zip 模板"（预设其余校验通过）；`--export-pack "iOS"` PCK 探针：JSON 关卡/模型/脚本(.gdc)/音频/图标全打入，非运行目录全排除；67 个 res:// 引用大小写核对 0 问题。
+测试：见上；本阶段不启动 iOS 模拟器（任务约束）。
+未解决问题与修复计划：BLOCKED=ios.zip 模板（需用户安装 4.7.2.stable 模板后跑 §7 步骤）；NOT_RUN=模拟器/真机一切项（清单在 plan §8）；观察项=hit_effects 节点创建速率、event_bus._seen_event_ids 单局增长（均未改）。
+下一步：等用户安装 iOS 导出模板（或明确授权下载官方 tpz）→ `godot --headless --path . --export-release "iOS"` 产出 builds/ios/VoxelBlockSmash.xcodeproj → Xcode 签名（本机 Apple Development 身份）→ 真机清单。公共修复待 Mac 端提交同步（reports/ios/adaptation-status.md §8）。

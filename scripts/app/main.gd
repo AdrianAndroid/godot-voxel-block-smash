@@ -26,6 +26,12 @@ var _press_moved := false
 
 
 func _ready() -> void:
+	# iOS 适配（CQ 输入互斥）：引擎默认 emulate_mouse_from_touch=true 会让一次触摸
+	# 同时产生 InputEventMouseButton/Motion 与 InputEventScreenTouch/Drag（headless 实测），
+	# 导致旋转量翻倍、CannonView/ColumnClip 一次点按触发两次。本工程所有处理器均已
+	# 原生处理触摸事件，iOS 上关闭鼠标模拟；其他平台不受影响（桌面 emulate_touch_from_mouse 默认 false）。
+	if OS.has_feature("ios"):
+		Input.emulate_mouse_from_touch = false
 	router = GestureRouterScript.new()
 	controller = GameControllerScript.new()
 	add_child(controller)

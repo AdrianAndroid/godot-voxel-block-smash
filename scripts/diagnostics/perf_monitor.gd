@@ -6,7 +6,7 @@ const PerfProbe := preload("res://scripts/diagnostics/perf_probe.gd")
 
 var interval_sec := 5.0
 var path := "user://perf_log.jsonl"
-var enabled := true
+var enabled := OS.is_debug_build()  # iOS 适配：发布构建默认关（周期写盘仅限 debug/编辑器）
 var stats_provider := Callable()  # FM/F2：() -> Dictionary（fire_stats 快照，合入每行）
 
 var _frames: Array[float] = []
@@ -15,7 +15,8 @@ var _file: FileAccess
 
 
 func _ready() -> void:
-	_file = FileAccess.open(path, FileAccess.WRITE)
+	if enabled:
+		_file = FileAccess.open(path, FileAccess.WRITE)
 
 
 func _process(delta: float) -> void:
